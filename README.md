@@ -36,6 +36,12 @@ quantification demandent une machine Linux x86_64 ou Windows amd64 — ce qui
 tombe bien, puisque `configs/classifier.yaml` est dimensionné pour un GPU de
 16 Go.
 
+Pour l'export vers le NPU depuis un Mac, `docker/aidge/Dockerfile` décrit une
+image Linux avec AIDGE 0.10.1, `aidge_tosa` et Vela, et
+`scripts/npu/aidge_docker.sh` y exécute une commande sur une machine Linux
+jointe en SSH. L'image ne contient ni torch ni ONNX Runtime : elle ne remplace
+pas `make install` pour l'entraînement et les contrôles sur hôte.
+
 Python **3.11 ou 3.12**, pas 3.13 (CLAUDE.md §3).
 
 > Les paquets `aidge-*` sont épinglés à `>=0.10.1,<0.11`, la plage documentée

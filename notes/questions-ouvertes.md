@@ -42,16 +42,14 @@ Liste tenue à jour. Répondre directement sous la question en signant, puis dé
    entraîner directement avec des entrées dans [0, 1] ?
    — LeslieY0919, 2026-11-17
 
-7. **Fixe-t-on la version d'Aidge dans `pyproject.toml` ?** CLAUDE.md §3 demande `>=0.10.1,<0.11`, mais l'extra
-   `ml` ne fixe rien et la 0.11.0 est sortie le 2026-11-06 : un `make install` fait aujourd'hui prendrait donc
-   la 0.11. L'image `docker/aidge/` est en 0.10.1.
-   — LeslieY0919, 2026-11-17
-
-8. **Historique git** : les exports générés (1,2 Go de fichiers) restent dans l'historique, le `.git` pèse
+7. **Historique git** : les exports générés (1,2 Go de fichiers) restent dans l'historique, le `.git` pèse
    environ 300 Mo. Les retire-t-on en réécrivant l'historique (push forcé, chacun reclone) ?
    — LeslieY0919, 2026-11-17
 
 ## Réponses
+
+- **Quelle version d'Aidge ?** `>=0.10.1,<0.11`, épinglée dans `pyproject.toml` (commit `6be6ceb`). L'image
+  `docker/aidge/` est en 0.10.1. — 2026-11-17
 
 - **A-t-on reçu des outils des organisateurs ?** Oui : le SDK `alif_aidge_sdk`, l'exemple `alif_yolo_fastest`
   et le fork `aidge-tosa-fork`, listés dans CLAUDE.md §3. — 2026-11-17
