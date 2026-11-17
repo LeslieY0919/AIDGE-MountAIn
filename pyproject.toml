@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mountain"
+version = "0.1.0"
+description = "Chaîne de détection et de classification d'animaux sauvages pour Alif Ensemble E7 (Challenge AIDGE 2026, défi MountAIn)"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"   # AIDGE ne supporte pas 3.13
+
+# Dépendances du socle commun et des scripts. aidge-quantization est à part :
+# ses métadonnées déclarent aidge-backend-cuda comme obligatoire alors que la
+# chaîne CPU n'en a pas besoin. Voir l'étape 2 de l'installation du README.
+dependencies = [
+    "aidge-core",
+    "aidge-backend-cpu",
+    "aidge-onnx",
+    "aidge-export-cpp",
+    "huggingface-hub",
+    "numpy",
+    "onnx",
+    "onnxruntime",
+    "pillow",
+    "PyYAML",
+    "requests",
+    "timm",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "ultralytics",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+# Layout src/ : le paquet n'est importable qu'une fois installé
+# (`pip install -e .`), ce qui évite les imports accidentels depuis le cwd.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,38 +1,53 @@
+# ---------------------------------------------------------------------------
+# Règle générale : tout ce qui est régénérable par un script reste hors de git.
+# Les artefacts de modèles se partagent via GitHub Releases, pas par commit.
+# ---------------------------------------------------------------------------
+
 # Environnements et caches Python
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+.pytest_cache/
 
-# Datasets (regenerables via build_5species_dataset.py)
-dataset_wildlife/
-dataset_wildlife_backup/
-dataset_wildlife_staging/
+# Datasets — reconstructibles via scripts/classifier/build_dataset.py
+/data/datasets/
+/data/calibration/
+# data/samples/ est versionné : quelques images de référence pour les contrôles.
 
-# Modeles et archives volumineuses (a partager via GitHub Releases)
-*.onnx
-*.pt
-*.pth
-*.tar.gz
-*.zip
+# Artefacts de modèles (.pt, .onnx) — à partager via GitHub Releases.
+# Motif en /models/*/* et non /models/** : ce dernier exclurait aussi les
+# dossiers, et git ne sait pas ré-inclure un fichier dont le dossier parent
+# est exclu — les .gitkeep devenaient impossibles à committer.
+/models/*/*
+!/models/*/.gitkeep
 
-# Dossiers de compilation CMake et binaires
+# Exports C++ générés par AIDGE : 100 % régénérables, et très volumineux.
+# Contient aussi exports/wildlife_pipeline/, assemblé par build_standalone_cpp.py.
+/exports/
+
+# Anciens dossiers d'export, sortis du suivi git sur la branche d'architecture.
+# Régénérables par la chaîne ; conservés localement le temps de la transition.
+/export_cpp_detector/
+/export_tmp/
+/export_tmp_cmp_test/
+/export_tmp_det_int8/
+
+# Résultats de run : images annotées, tampons .bin, journaux
+/artifacts/
+
+# Compilation
 **/build/
 **/build_*/
 *.o
 *.so
 *.a
 *.bin
-wildlife_pipeline
-run_export
+# Les binaires produits (wildlife_pipeline, run_export) ne sont pas listés par
+# leur nom : un motif nu `wildlife_pipeline` ignorerait aussi le DOSSIER
+# cpp/wildlife_pipeline/. Ils vivent sous exports/ et **/build/, déjà exclus.
 
-# Exports C++ generes automatiquement par Aidge (poids volumineux)
-export_cpp_detector_int8/
-export_cpp_classifier/
-export_cpp_classifier_int8/
-standalone_wildlife_cpp/detector_dnn/
-standalone_wildlife_cpp/classifier_dnn/
-
-# Images de sortie temporaires
-full_cpp_pipeline_result.jpg
+# Divers
+.DS_Store

@@ -1,16 +1,10 @@
-aidge-backend-cpu
-aidge-core
-aidge-export-cpp
-aidge-onnx
-huggingface-hub
-numpy
-onnx
-onnxruntime
-pillow
-PyYAML
-requests
-timm
-torch
-torchvision
-tqdm
-ultralytics
+# Conservé pour les flux qui attendent un requirements.txt (CI simple, Colab).
+# La source de vérité des dépendances est pyproject.toml : ce fichier ne fait
+# qu'installer le paquet du dépôt, qui les déclare.
+#
+#   pip install -r requirements.txt
+#
+# Équivalent à `make install`, à ceci près que make ajoute aussi
+# aidge-quantization avec --no-deps (voir le README).
+
+-e .

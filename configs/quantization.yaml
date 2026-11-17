@@ -1,0 +1,33 @@
+# Quantification post-entraînement (PTQ) int8
+#
+# C'est l'étape piégeuse de la chaîne : « quelques lignes de script », mais
+# selon le modèle et les données de calibration fournies on peut perdre
+# énormément de précision — jusqu'à un modèle qui ne marche plus du tout.
+# Y passer du temps, et toujours comparer au fp32 (tools/diagnose_ptq.py).
+#
+# Contrainte matérielle : poids sur 8 bits entiers (REQ-019), convolutions
+# exécutées par l'Ethos-U55 (REQ-020).
+
+nb_bits: 8
+
+# Jeu de calibration. Il doit suivre la même distribution que les données
+# d'inférence : on l'échantillonne dans le split train du dataset, avec le
+# pré-traitement de mountain.preprocess — pas une variante locale.
+calibration:
+  nb_samples: 64
+  dataset_split: train
+  seed: 0
+
+# Options de aidge_quantization. clipping_mode et single_shift sont les deux
+# leviers qui changent le plus le résultat : tools/tune_ptq.py balaie leurs
+# combinaisons et reporte le top-1 obtenu.
+options:
+  clipping_mode: MSE          # alternatives : MAX, ADJUST, KL
+  optimize_signs: true
+  single_shift: false
+  use_cuda: false
+  fold_graph: true
+
+# Perte maximale tolérée par rapport au fp32 (REQ-018 : <= 5 points de mAP).
+targets:
+  max_map_loss_points: 5.0
