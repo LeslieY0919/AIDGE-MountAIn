@@ -8,7 +8,7 @@ PYTHON ?= python
 .DEFAULT_GOAL := help
 .PHONY: help install detector-weights dataset train-classifier \
         export-detector export-classifier quantize build-cpp \
-        run-reference check clean-exports clean-artifacts
+        run-reference check test clean-exports clean-artifacts
 
 help:  ## Affiche cette aide
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -51,7 +51,27 @@ build-cpp:  ## Assemble et compile le pipeline C++ sous exports/wildlife_pipelin
 run-reference:  ## Exécute la référence Python sur l'image d'exemple
 	$(PYTHON) scripts/pipeline/run_reference.py
 
-check:  ## Lance les contrôles de parité Python <-> C++
+# Les contrôles de tests/ sont préfixés check_ et non test_ : ce sont des
+# scripts exécutables qui ont besoin d'artefacts construits. pytest ne les
+# collecte donc pas, et on les enchaîne explicitement ici. L'ordre est celui du
+# diagnostic : un échec en bas se comprend en regardant ce qui a passé en haut.
+CHECKS = \
+  tests/check_aidge_onnx_smoke.py \
+  tests/check_detector_export.py \
+  tests/check_detector_aidge_parity.py \
+  tests/check_cpp_detector_fp32.py \
+  tests/check_cpp_detector_int8.py \
+  tests/check_detector_int8_decode.py \
+  tests/check_cpp_pipeline_full.py
+
+check:  ## Lance les contrôles de parité Python <-> C++, dans l'ordre du diagnostic
+	@for c in $(CHECKS); do \
+	  echo "=== $$c ==="; \
+	  $(PYTHON) $$c || { echo "ÉCHEC : $$c"; exit 1; }; \
+	done
+	@echo "Tous les contrôles ont passé."
+
+test:  ## Lance les tests unitaires pytest (test_*.py ; aucun pour l'instant)
 	$(PYTHON) -m pytest
 
 # --- ménage --------------------------------------------------------------

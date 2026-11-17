@@ -45,6 +45,10 @@ une dépendance absente — sans conséquence. Pour le backend CUDA, installer
 | 7 | `make build-cpp` | `exports/wildlife_pipeline/build/wildlife_pipeline` |
 | 8 | `make check` | contrôles de parité Python ↔ C++ |
 
+`make test` est à part : il lance `pytest` sur les `test_*.py`, et il n'y en a
+aucun pour l'instant. Les contrôles de `tests/` sont préfixés `check_` parce
+qu'ils ont besoin d'artefacts construits — voir [tests/README.md](tests/README.md).
+
 Les étapes 4 et 5 sont des contrôles de faisabilité en fp32 : elles valident
 qu'AIDGE sait exporter les graphes avant d'ajouter la difficulté de la
 quantification. On peut passer directement de 3 à 6, mais en cas d'échec il
