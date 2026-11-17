@@ -7,6 +7,7 @@
 #   MODEL_PATH   .tflite compilé par Vela (ethos-u55-256) ; MobileNet-v2 par défaut
 #   LABELS_FILE  fichier d'étiquettes, une classe par ligne
 #   IMAGE_SIZE   côté de l'image d'entrée du modèle, 224 par défaut
+#   SHOW_INF_TIME=1  affiche sur l'écran le temps de prétraitement + inférence + post-traitement
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -28,6 +29,7 @@ cmake_args=(
 if [ -n "${MODEL_PATH:-}" ]; then cmake_args+=("-Dalif_img_class_MODEL_PATH=$MODEL_PATH"); fi
 if [ -n "${LABELS_FILE:-}" ]; then cmake_args+=("-Dalif_img_class_LABELS_TXT_FILE=$LABELS_FILE"); fi
 if [ -n "${IMAGE_SIZE:-}" ]; then cmake_args+=("-Dalif_img_class_IMAGE_SIZE=$IMAGE_SIZE"); fi
+if [ "${SHOW_INF_TIME:-0}" = "1" ]; then cmake_args+=("-Dalif_img_class_SHOW_INF_TIME=ON"); else cmake_args+=("-Dalif_img_class_SHOW_INF_TIME=OFF"); fi
 
 "$CMAKE" -S "$MLEK_ROOT" -B "$BUILD_DIR" -G "Unix Makefiles" "${cmake_args[@]}"
 make -C "$BUILD_DIR" mlek_alif_img_class -j"$(sysctl -n hw.ncpu)"
