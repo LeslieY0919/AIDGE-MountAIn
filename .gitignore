@@ -49,5 +49,22 @@ __pycache__/
 # leur nom : un motif nu `wildlife_pipeline` ignorerait aussi le DOSSIER
 # cpp/wildlife_pipeline/. Ils vivent sous exports/ et **/build/, déjà exclus.
 
+# Modèles, où qu'ils se trouvent (ONNX, PyTorch, TFLite, TOSA, firmware)
+*.onnx
+*.pt
+*.tflite
+*.tosa
+*.axf
+
+# Outils de la carte clonés ou sauvegardés à côté du dépôt : kit d'évaluation
+# ML d'Alif (scripts/board/build_img_class.sh) et copie du firmware d'usine.
+/external/
+/backup/
+
+# Réglages propres à une machine : chemins des outils, port série, notes.
+/scripts/board/env.local.sh
+CLAUDE.local.md
+/.venv-yolo/
+
 # Divers
 .DS_Store

@@ -1,0 +1,22 @@
+# Dépendances réduites du kit d'évaluation ML d'Alif : seuls les paquets nécessaires aux cas d'usage image en TFLM
+# sont conservés. Le scripts/py/requirements.txt d'origine ajoute torch, executorch et des bibliothèques audio
+# (environ 1,5 Go de plus une fois installés), inutiles pour ce projet.
+#
+# Utilisation :
+#   cd external/alif_ml-embedded-evaluation-kit
+#   python3.10 set_up_default_resources.py --ml-frameworks tflm --use-case img_class --use-case object_detection \
+#       --requirements-file ../../scripts/mlek_requirements_tflm.txt
+
+cffi==1.17.1
+# Le kit fixe CMake 3.30.5, ce qui évite les incompatibilités de CMake 4
+cmake==3.30.5
+flatbuffers==25.2.10
+importlib_metadata==8.5.0
+Jinja2==3.1.6
+lxml==5.3.0
+MarkupSafe==3.0.2
+numpy==2.1.3
+pillow==12.1.1
+pycparser==2.22
+six==1.16.0
+zipp==3.20.2
