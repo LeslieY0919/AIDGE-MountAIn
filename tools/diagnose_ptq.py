@@ -7,10 +7,14 @@ import aidge_backend_cpu
 import aidge_onnx
 import aidge_quantization
 
-from mountain import paths
+from mountain import paths, preprocess
 
-MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+# Definition unique dans mountain.preprocess : la normalisation de la
+# calibration PTQ doit etre rigoureusement identique a celle de
+# l'entrainement, sinon la quantification s'etalonne sur la mauvaise
+# distribution. Reexportees ici sous leurs anciens noms.
+MEAN = preprocess.IMAGENET_MEAN
+STD = preprocess.IMAGENET_STD
 
 def preprocess(img_path):
     img = Image.open(img_path).convert("RGB").resize((128, 128), Image.BILINEAR)

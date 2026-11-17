@@ -13,7 +13,7 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
-from mountain import paths
+from mountain import config, paths
 
 CLASS_NAMES_PATH = paths.CLASS_NAMES
 DETECTOR_ONNX_PATH = paths.DETECTOR_ONNX_CUT_FOLDED
@@ -21,22 +21,20 @@ DATASET_DIR = paths.WILDLIFE_DATASET
 BACKUP_DIR = paths.WILDLIFE_DATASET.with_name("wildlife_backup")
 
 # Uniquement tes 5 especes de base
-SPECIES_SCIENTIFIC = {
-    "blaireau": "Meles meles",
-    "chevreuil": "Capreolus capreolus",
-    "ecureuil": "Sciurus vulgaris",
-    "renard": "Vulpes vulpes",
-    "sanglier": "Sus scrofa",
-}
+# Toutes ces valeurs viennent de configs/classifier.yaml, section `dataset`.
+_DS = config.classifier()["dataset"]
 
-TARGET_PER_CLASS = 650      # ~650 images recadrees par espece (~3250 au total)
-MAX_TOTAL_MINUTES = 20.0    # ~4 minutes par espece
-VAL_RATIO = 0.15            # 85% train / 15% val
-CONF_THRESH = 0.45          # Confiance minimale YOLOv10
-MIN_BOX_PX = 32
-CROP_MARGIN = 0.10
-WORKERS = 4
-USER_AGENT = "AidgeWildlife5Species/1.0"
+#: nom de classe -> nom scientifique, pour la requete iNaturalist
+SPECIES_SCIENTIFIC = _DS["species"]
+
+TARGET_PER_CLASS = _DS["target_per_class"]    # images recadrees par espece
+MAX_TOTAL_MINUTES = _DS["max_total_minutes"]  # garde-fou sur la duree
+VAL_RATIO = _DS["val_ratio"]                  # 85% train / 15% val
+CONF_THRESH = _DS["crop_conf_threshold"]      # confiance minimale du detecteur
+MIN_BOX_PX = _DS["crop_min_box_px"]           # rejette les animaux trop petits
+CROP_MARGIN = _DS["crop_margin"]              # marge autour de la boite
+WORKERS = _DS["workers"]
+USER_AGENT = _DS["user_agent"]
 
 
 def normalize_key(text: str) -> str:

@@ -11,7 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, models, transforms
 
-from mountain import paths
+from mountain import config, paths
 
 # --- Configuration optimisee RTX 5070 Ti (16 Go VRAM) + Aidge C++ ---
 DATA_DIR = paths.WILDLIFE_DATASET
@@ -19,17 +19,23 @@ CLASS_NAMES_PATH = paths.CLASS_NAMES
 ONNX_OUT = paths.CLASSIFIER_ONNX
 BEST_PT_OUT = paths.CLASSIFIER_PT
 
-IMG_SIZE = 128          # Taille fixe attendue par export_cpp_classifier_int8
-BATCH_SIZE = 128        # Exploite les 16 Go de VRAM et stabilise BatchNorm
-NUM_WORKERS = 4
-EPOCHS_HEAD = 6         # Phase 1 : chauffe de la tete de classification
-EPOCHS_FULL = 44        # Phase 2 : fine-tuning complet du ResNet-34
-LR_HEAD = 1.5e-3
-LR_BACKBONE = 3e-4
-WEIGHT_DECAY = 1e-2
+# Toutes ces valeurs viennent de configs/classifier.yaml : c'est le seul
+# endroit a editer. IMG_SIZE doit rester identique a l'in_shape utilise par la
+# quantification et par l'export C++, sinon l'export echoue.
+_CFG = config.classifier()
+_TRAIN = _CFG["training"]
 
-MEAN = [0.485, 0.456, 0.406]
-STD = [0.229, 0.224, 0.225]
+IMG_SIZE = _CFG["input_size"]
+BATCH_SIZE = _TRAIN["batch_size"]
+NUM_WORKERS = _TRAIN["num_workers"]
+EPOCHS_HEAD = _TRAIN["epochs_head"]      # Phase 1 : chauffe de la tete
+EPOCHS_FULL = _TRAIN["epochs_full"]      # Phase 2 : fine-tuning complet
+LR_HEAD = _TRAIN["lr_head"]
+LR_BACKBONE = _TRAIN["lr_backbone"]
+WEIGHT_DECAY = _TRAIN["weight_decay"]
+
+MEAN = _CFG["normalization"]["mean"]
+STD = _CFG["normalization"]["std"]
 
 
 def build_resnet34(num_classes: int) -> nn.Module:

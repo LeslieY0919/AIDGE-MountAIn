@@ -18,10 +18,14 @@ import importlib
 export_mod = importlib.import_module("aidge_core.export_utils.export")
 from aidge_export_cpp import CPP_ROOT, ExportLibCpp
 
-from mountain import paths
+from mountain import paths, preprocess
 
-MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+# Definition unique dans mountain.preprocess : la normalisation de la
+# calibration PTQ doit etre rigoureusement identique a celle de
+# l'entrainement, sinon la quantification s'etalonne sur la mauvaise
+# distribution. Reexportees ici sous leurs anciens noms.
+MEAN = preprocess.IMAGENET_MEAN
+STD = preprocess.IMAGENET_STD
 CLS_NORM_DIV = 3.0
 
 

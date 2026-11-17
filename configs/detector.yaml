@@ -37,6 +37,15 @@ postprocess:
   strides: [8, 16, 32]    # les trois échelles de la tête YOLO
   min_box_px: 24          # [POSÉ] REQ-033 : taille apparente minimale
 
+# Fine-tuning exploratoire (scripts/detector/finetune.py). Hors chemin
+# nominal : MegaDetector v6 n'est PAS à réentraîner, le défi porte sur son
+# déploiement. Conservé parce que remapper les classes du dataset vers la
+# classe 0 ('animal') permet de garder intacte la tête de classification.
+finetune:
+  epochs: 150             # arrêt automatique dès le plateau
+  batch_size: 32          # dimensionné pour 16 Go de VRAM en 640x640
+  target_precision: 0.85  # objectif de précision (P) et de mAP@50
+
 # Budget mémoire de la cible Alif Ensemble E7 — le contrat le plus
 # contraignant du projet. Informe le choix d'input_size.
 memory_budget:

@@ -10,7 +10,7 @@ import yaml
 from ultralytics import YOLO
 from ultralytics.data.utils import check_det_dataset
 
-from mountain import paths
+from mountain import config, paths
 
 # ==============================================================================
 # CONFIGURATION (deja calibree pour RTX 5070 Ti 16 Go + cible >= 85% precision)
@@ -22,10 +22,14 @@ FINAL_ONNX_NAME = str(paths.DETECTOR_ONNX_TRAINED)
 # Laisse vide ("") pour telecharger automatiquement le dataset faune Ultralytics.
 CUSTOM_DATASET_ZIP_URL = ""
 
-IMGSZ = 640             # Resolution fixe (doit correspondre a Aidge : [1, 3, 640, 640])
-EPOCHS = 150            # ~5-10 min sur RTX 5070 Ti (arret auto des que le plateau est atteint)
-BATCH_SIZE = 32         # Exploite les 16 Go de VRAM en 640x640
-TARGET_PRECISION = 0.85 # Objectif de 85% de precision (P) et mAP@50
+# Valeurs issues de configs/detector.yaml. IMGSZ doit correspondre a l'in_shape
+# utilise par l'export AIDGE : [1, 3, IMGSZ, IMGSZ].
+_DET = config.detector()
+
+IMGSZ = _DET["model"]["input_size"]
+EPOCHS = _DET["finetune"]["epochs"]
+BATCH_SIZE = _DET["finetune"]["batch_size"]
+TARGET_PRECISION = _DET["finetune"]["target_precision"]
 PROJECT_NAME = "wildlife_mdv6_aidge"
 # ==============================================================================
 

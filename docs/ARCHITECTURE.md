@@ -169,9 +169,9 @@ sans alourdir le clone.
 
 ## Ce que cette structure n'a pas changé
 
-La réorganisation a déplacé le code et recâblé ses chemins ; elle n'a pas
-réécrit la logique métier. Trois scripts restent gros et mériteraient d'être
-découpés :
+La réorganisation a déplacé le code, recâblé ses chemins et sorti ses
+constantes ; elle n'a pas réécrit la logique métier. Trois scripts restent
+gros et mériteraient d'être découpés :
 
 - `scripts/quantize/pipeline_int8.py` (~580 lignes) fait office de
   bibliothèque pour `rebuild_classifier.py`, qui en importe sept symboles.
@@ -190,3 +190,15 @@ découpés :
 
 Ces trois points sont le chantier suivant, et ils demandent de pouvoir
 exécuter la chaîne pour vérifier qu'on ne casse rien.
+
+Deux duplications subsistent aussi, par nature :
+
+- **le post-traitement**, en Python et en C++. C'est voulu : le C++ est la
+  cible, Python est l'oracle. Mais les seuils sont écrits en dur dans le C++
+  au lieu de venir de `configs/detector.yaml`, faute de mécanisme
+  d'injection. Une divergence silencieuse est donc possible — à surveiller en
+  revue, et signalé dans `cpp/detector_standalone/README.md` ;
+- **`MEAN`/`STD` dans `scripts/quantize/pipeline_int8.py`** et les deux outils
+  de PTQ, qui les réexportent sous leur ancien nom depuis
+  `mountain.preprocess`. L'alias évite de toucher aux ~580 lignes qui s'en
+  servent, et `rebuild_classifier.py` les importe de là.

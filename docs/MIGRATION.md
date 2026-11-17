@@ -132,6 +132,28 @@ from mountain import paths
 graph = aidge_onnx.load_onnx(str(paths.DETECTOR_ONNX_CUT_FOLDED))
 ```
 
+**Les constantes des scripts actifs sont désormais lues dans `configs/`.** Les
+23 valeurs qui étaient en tête de `train.py`, `build_dataset.py` et
+`finetune.py` (résolutions, tailles de lot, époques, taux d'apprentissage,
+seuils de recadrage, liste des espèces) viennent de `configs/*.yaml`. Les noms
+de variables sont inchangés, donc le corps des scripts n'a pas bougé :
+
+```python
+# avant
+IMG_SIZE = 128
+BATCH_SIZE = 128
+EPOCHS_FULL = 44
+
+# après
+_CFG = config.classifier()
+IMG_SIZE = _CFG["input_size"]
+BATCH_SIZE = _CFG["training"]["batch_size"]
+EPOCHS_FULL = _CFG["training"]["epochs_full"]
+```
+
+Chacune des 23 valeurs a été vérifiée égale à l'ancienne, et l'ordre des cinq
+espèces est préservé — il détermine l'indice des logits du classifieur.
+
 **Ne plus redéfinir de constante.**
 
 ```python
