@@ -26,6 +26,6 @@ incomplètes ou fausses, et elles sont faites pour être lues, discutées et cor
 
 | Date | Note | État |
 |---|---|---|
-| 2026-11-17 | [Aidge → TOSA → Vela : exporter un classifieur pour l'Ethos-U55](2026-11-17-aidge-vers-npu.md) | mesuré sur PC, rien sur la carte |
-| 2026-11-17 | [Carte, mémoire et kit d'Alif : ce qu'on a vérifié](2026-11-17-contraintes-carte-et-kit.md) | lu dans le code du kit, estimations Vela |
+| 2026-11-17 | [Aidge → TOSA → Vela : exporter les modèles pour l'Ethos-U55](2026-11-17-aidge-vers-npu.md) | mesuré sur PC avec les outils du porteur, rien sur la carte |
+| 2026-11-17 | [Carte, mémoire, kit d'Alif et SDK du porteur : ce qu'on a vérifié](2026-11-17-contraintes-carte-et-kit.md) | lu dans le code du kit et du SDK, estimations Vela |
 | en continu | [Questions ouvertes](questions-ouvertes.md) | questions |

@@ -45,11 +45,15 @@ avant le **2026-12-31**, soutenance le **2027-01-14**
   à UART2, puis les remettre sur SEUART avant de flasher.
 - Noms de cible J-Link : `AE722F80F55D5_HP`, `AE722F80F55D5_HE`, `AE722F80F55D5_A32_0`, `AE722F80F55D5_A32_1`.
 - Guide de référence : Alif AUGD0020, *AI/ML AppKit w/J-Link On-Board User Guide*.
+- Le SDK du porteur suppose par défaut une caméra ARX3A0 sur l'AppKit (« The AppKit E7 ships with the ARX3A0 ») :
+  pour notre MT9M114, compiler avec `-DALIF_CAMERA_MODULE=MT9M114`, comme CLAUDE.md §3. À confirmer au premier
+  essai caméra.
 
 Les 8 Mo de SRAM et 4,5 Mo de MRAM de CLAUDE.md correspondent à ce que voit **un** cœur avec les scripts d'édition
-de liens du kit d'Alif (`RTSS-HP.ld` : ITCM 256 Kio, DTCM 1 Mio, SRAM0 4 Mio, SRAM1 2,5 Mio, MRAM 4,46 Mio). Dans
-ce kit, les scripts HP et HE partent de la même adresse MRAM et utilisent les mêmes SRAM0 et SRAM1 : faire tourner
-deux binaires en même temps demande de découper la mémoire.
+de liens du kit d'Alif, que le SDK reprend à l'identique (`RTSS-HP.ld` : ITCM 256 Kio, DTCM 1 Mio, SRAM0 4 Mio,
+SRAM1 2,5 Mio, MRAM 4,46 Mio). Les scripts HP et HE partent de la même adresse MRAM et utilisent les mêmes SRAM0
+et SRAM1, et le SDK flashe une seule image à la fois : faire tourner deux binaires en même temps demande de
+découper la mémoire.
 
 ## Environnement de la carte
 
@@ -88,8 +92,8 @@ chemins dans `scripts/board/env.local.sh` (non versionné). Il définit aussi `S
 ## Kit d'évaluation ML d'Alif
 
 Il s'agit du kit public d'Alif (`alif_ml-embedded-evaluation-kit`, TFLM + Ethos-U), utilisé ici pour vérifier la
-carte et mesurer un modèle. **Ce n'est pas le SDK du porteur** (`alif_aidge_sdk`, CLAUDE.md §3), qui n'a pas
-encore été essayé sur cette machine.
+carte et mesurer un modèle. **Ce n'est pas le SDK du porteur** (section suivante), qui en reprend les briques. Les
+modèles du kit prennent `q = pixel − 128` en entrée, ceux du SDK non : ne pas mélanger les deux.
 
 - Clone superficiel dans `external/` ; les sous-modules sont récupérés au minimum, **sans
   `dependencies/executorch`** (seul TFLM sert).
@@ -106,12 +110,35 @@ encore été essayé sur cette machine.
 - Limites de ses exemples pour notre chaîne : voir
   [notes/2026-11-17-contraintes-carte-et-kit.md](notes/2026-11-17-contraintes-carte-et-kit.md).
 
+## SDK du porteur (`alif_aidge_sdk`)
+
+Lu dans le code (`eb35a81`) ; son export a été essayé, son firmware n'a été ni compilé ni flashé ici. Détails dans
+[notes/2026-11-17-contraintes-carte-et-kit.md](notes/2026-11-17-contraintes-carte-et-kit.md#ce-que-fait-le-sdk-du-porteur).
+
+- **Installation** : celle de CLAUDE.md §3, à une différence près pour le détecteur.
+  - Le SDK utilise l'option `ethos_be` d'`aidge_export_arm_ethos` quand elle existe : elle convertit les îlots
+    flottants (Softmax, Sigmoid) en opérateurs entiers.
+  - Cette option n'existe que sur la branche `feat/ethos-be-lowering` du fork du porteur
+    (`https://gitlab.eclipse.org/olivierpds/aidge_export_ethos.git`). Le dépôt officiel ne l'a pas, et sans elle
+    Vela refuse YOLOv10n.
+- **Convention d'entrée** :
+  - l'ONNX prend une image dans [0, 1], en NCHW ;
+  - le graphe exporté prend des codes int8 en NHWC, `code = round(pixel / 255 × 127)`, zéro 0 ;
+  - `model_io.json` donne une échelle par sortie.
+- **Firmware** :
+  - le modèle doit passer à 100 % sur le NPU : TFLM n'enregistre que l'opérateur Ethos-U ;
+  - l'arène fait 2 Mio par défaut, dans SRAM1 (`ACTIVATION_BUF_SZ`) ;
+  - la console est sur UART2 à 115 200 bauds, à lire en passant J15 sur UART2.
+- **Flash** : `tools/flash_mram.sh --cpu HP|HE` appelle `app-write-mram -p -b 55000` (opération à faire valider,
+  voir la dernière section). L'image HP et l'image HE vont à la même adresse : la seconde remplace la première.
+
 ## Mesures Vela sur l'Ethos-U55
 
 Estimations de Vela, pas des mesures sur carte ; les mesures publiées par Alif sur carte valent environ 2 fois ces
-estimations. Elles portent sur **YOLOv10n**, de la même famille que `MDV6-yolov10-c`, qui reste à profiler de la
-même façon. Poids en MRAM. HP = M55-HP + U55-256 à 400 MHz, HE = M55-HE + U55-128 à 160 MHz. Les variantes
-modifiées ne sont pas réentraînées : seules la vitesse et la mémoire comptent.
+estimations. Le tableau ci-dessous passe par la conversion TFLite (onnx2tf) ; les chiffres par Aidge sont dans la
+section suivante. Les mesures portent sur **YOLOv10n**, de la même famille que `MDV6-yolov10-c`, qui reste à
+profiler de la même façon. Poids en MRAM. HP = M55-HP + U55-256 à 400 MHz, HE = M55-HE + U55-128 à 160 MHz. Les
+variantes modifiées ne sont pas réentraînées : seules la vitesse et la mémoire comptent.
 
 | Modèle | Entrée | HP | HE | Pic SRAM | MRAM |
 |---|---|---|---|---|---|
@@ -148,20 +175,28 @@ Pour régénérer (résultats et CSV par couche dans `artifacts/u55_profile/`) :
 
 ## Aidge → Ethos-U55
 
-- `scripts/npu/export_classifier.py` : ONNX → PTQ INT8 d'Aidge → TOSA (`aidge_tosa`) → Vela →
-  `exports/npu/<modèle>/output/model_vela.tflite`. Un MobileNetV2-1.0 en 224 passe entièrement sur le NPU, mais
-  avec un Transpose de chaque côté des convolutions : 77 ms et 9,2 Mio de SRAM d'après Vela, contre 10,7 ms et
-  1,4 Mio par TFLite. Résultats et pièges dans
-  [notes/2026-11-17-aidge-vers-npu.md](notes/2026-11-17-aidge-vers-npu.md).
-- L'image `docker/aidge/` installe l'`aidge_tosa` **officiel** à un commit figé. En int8, il gère Conv, DWConv,
-  pooling (sans padding), FC, ReLU, Add, Reshape et Transpose ; il lui manque Sigmoid/Mul, Concat, Resize,
-  Split/Slice, Pad, Softmax et MatMul. Un MobileNetV2 passe donc entièrement, pas le détecteur.
-- CLAUDE.md §3 demande d'utiliser le fork `aidge-tosa-fork` du porteur, qui gère les couches de MegaDetector :
-  **pas encore essayé ici**.
-- YOLOv10n ReLU sans PSA en 320 compte 182 opérateurs, dont 34 que l'`aidge_tosa` officiel ne gère pas : 16 Slice,
-  13 Concat, 3 MaxPool avec padding (SPPF) et 2 Resize ; il a en outre 6 sorties. Le frontal TOSA de Vela 5.0/5.1
-  gère Concat, Slice, Pad et le pooling, mais pas RESIZE ; le suréchantillonnage ×2 au plus proche voisin peut se
-  réécrire en Reshape + Concat.
+Estimations de Vela, cœur HP, chaîne du SDK avec le fork `aidge-tosa-fork` et la branche `feat/ethos-be-lowering`
+d'`aidge_export_ethos`. Résultats, contrôles et pièges dans
+[notes/2026-11-17-aidge-vers-npu.md](notes/2026-11-17-aidge-vers-npu.md).
+
+| Modèle | Entrée | NPU / CPU | Temps | Pic SRAM | MRAM | Par TFLite |
+|---|---|---|---|---|---|---|
+| MobileNetV2-1.0 | 224 | 68 / 0 | 13.1 ms | 1.44 MiB | 2.98 MiB | 10.7 ms, 1.44 MiB |
+| YOLOv10n d'origine (SiLU + PSA) | 320 | 344 / 0 | 54.3 ms | 0.79 MiB | 1.62 MiB | 48.2 ms, 5.26 MiB |
+
+- `scripts/npu/sdk_export_report.py` : export par `alif_aidge_sdk.export.export_model`, puis résumé
+  (`result.json` : estimation de Vela, corrélation flottant / int8 par sortie, contrôle TOSA).
+- `scripts/npu/onnx_slices_to_split.py` : à passer sur le détecteur avant l'export. Dans notre ONNX de YOLOv10n,
+  les C2f séparent leurs canaux par des Slice, que le fork convertit mal en NHWC ; le Split équivalent passe.
+- Sur YOLOv10n, la quantification abîme surtout les sorties de classes (corrélation 0,56 à 0,86 avec le
+  flottant, contre 0,99 pour les boîtes), sur 10 images de calibration seulement.
+- Le fork gère, en plus de l'`aidge_tosa` officiel, Concat, Slice, Split, Resize, MaxPool avec padding, Sigmoid,
+  Softmax et MatMul. Il retire aussi les Transpose que l'officiel place autour de chaque convolution.
+- L'`aidge_tosa` **officiel** (celui de l'image `docker/aidge/`) ne convient pas à la carte. MobileNetV2 y donne
+  77 ms et 9,2 Mio de SRAM en NCHW, et Vela le refuse en NHWC ; le détecteur ne passe pas.
+- `scripts/npu/export_classifier.py` est notre premier script d'export. Il suit la convention du kit d'Alif
+  (`q = pixel − 128`) et ne sert qu'avec `scripts/board/build_img_class.sh`. Avec le fork, il donne en NCHW le
+  même résultat que le SDK (71 opérateurs, 13,2 ms) ; en NHWC, il plante.
 - Autre chemin d'Aidge, non essayé : l'export hybride Cortex-M avec `--npu` (cible `ake7`), où les sous-graphes
   que Vela sait compiler vont sur le NPU et le reste sur le CPU (CMSIS-NN), sans TFLM.
 
@@ -172,6 +207,16 @@ l'image Docker `wildlife-aidge:0.10.1` (`docker/aidge/Dockerfile` : Aidge 0.10.1
 `aidge_tosa` et `aidge_export_arm_ethos` à des commits figés, Vela 5.1.0) sur une machine Linux x86_64 jointe en
 SSH. Tout passe par `scripts/npu/aidge_docker.sh` (build / status / push / run / fetch) ; l'hôte se choisit avec
 `DEV2_HOST`. Le firmware reste compilé et flashé sur la machine à laquelle la carte est branchée.
+
+L'image n'a ni les outils du porteur ni onnxruntime. Pour la chaîne du SDK, sans reconstruire l'image :
+
+- cloner les dépôts du porteur dans `external/organisateur/` (non versionné) ;
+- les envoyer avec `push` ;
+- les placer en tête du `PYTHONPATH` dans `run`.
+
+Les commandes sont dans [notes/2026-11-17-aidge-vers-npu.md](notes/2026-11-17-aidge-vers-npu.md#reproduire).
+Faute d'onnxruntime, `sdk_export_report.py` calcule les sorties flottantes de référence avec Aidge. Le fork fixe
+`tosa-tools==2026.5.0` ; l'image a la 2026.8.0, sans problème constaté.
 
 ## Opérations à faire valider
 

@@ -103,15 +103,23 @@ classification de ce kit avec un modèle donné et prépare le paquet ATOC. Aucu
 des deux n'écrit sur la carte : le flash reste une étape manuelle, soumise à
 validation (voir [AGENTS.md](../AGENTS.md)).
 
-`scripts/npu/` est le début du portage sur le NPU. `export_classifier.py`
-enchaîne la PTQ d'AIDGE, `aidge_tosa` et Vela pour produire le `.tflite` que
-le NPU exécute ; il prend ses chemins dans `mountain.paths` et sa
-normalisation dans `mountain.preprocess`, comme le reste de la chaîne. Cet
-export demande `aidge_tosa`, `aidge_export_arm_ethos` et Vela, qui ne sont pas
-dans `make install` : l'environnement est décrit par `docker/aidge/Dockerfile`.
-`aidge_docker.sh` sert aux machines sans wheel AIDGE (macOS) : il exécute une
-commande dans cette image sur une machine Linux jointe en SSH. Les sorties
-vont dans `exports/npu/`.
+`scripts/npu/` est le début du portage sur le NPU, qui suit le SDK du porteur
+(`alif_aidge_sdk`, CLAUDE.md §3) :
+
+- `sdk_export_report.py` appelle l'export du SDK (PTQ d'AIDGE, fork
+  `aidge_tosa`, Vela) et en résume le résultat ;
+- `onnx_slices_to_split.py` prépare l'ONNX du détecteur pour ce fork ;
+- `export_classifier.py`, antérieur, produit un `.tflite` pour le kit d'Alif
+  (convention d'entrée `pixel − 128`). Il prend ses chemins dans
+  `mountain.paths` et sa normalisation dans `mountain.preprocess`, comme le
+  reste de la chaîne.
+
+Ces exports demandent `aidge_tosa`, `aidge_export_arm_ethos` et Vela, qui ne
+sont pas dans `make install`. `docker/aidge/Dockerfile` décrit une image avec
+leurs versions officielles ; les dépôts du porteur s'y ajoutent par le
+`PYTHONPATH`. `aidge_docker.sh` sert aux machines sans wheel AIDGE (macOS) :
+il exécute une commande dans cette image sur une machine Linux jointe en SSH.
+Les sorties vont dans `exports/npu/`.
 
 ### `cpp/` — la cible
 

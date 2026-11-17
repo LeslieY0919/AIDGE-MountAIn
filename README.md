@@ -225,16 +225,26 @@ valider avant tout flash : [AGENTS.md](AGENTS.md).
 
 ## Vers l'Ethos-U55
 
-Deux compléments à la chaîne sur hôte, tous deux sans carte :
+Compléments à la chaîne sur hôte, tous sans carte :
 
-- **`tools/u55/`** estime avec Vela le temps d'inférence et la mémoire d'un
-  modèle sur l'Ethos-U55, couche par couche. Résultats dans
-  [AGENTS.md](AGENTS.md#mesures-vela-sur-lethos-u55).
-- **`scripts/npu/export_classifier.py`** exporte un classifieur ONNX avec
-  AIDGE : PTQ int8 → TOSA (`aidge_tosa`) → Vela → `.tflite` pour le NPU. Il
-  demande l'environnement de `docker/aidge/` ; sur une machine sans wheel
-  AIDGE (macOS), `scripts/npu/aidge_docker.sh` l'exécute sur une machine Linux
-  jointe en SSH.
+- **`scripts/npu/sdk_export_report.py`** exporte un ONNX par la chaîne du SDK
+  du porteur (PTQ int8 d'AIDGE → fork `aidge_tosa` → Vela → `.tflite` pour le
+  NPU) et résume le résultat. MobileNetV2 et YOLOv10n passent entièrement sur
+  le NPU. Pour le détecteur, il y a deux préalables :
+  - passer d'abord **`scripts/npu/onnx_slices_to_split.py`** sur l'ONNX ;
+  - installer `aidge_export_ethos` depuis la branche `feat/ethos-be-lowering`
+    du fork du porteur.
+
+  Résultats dans [AGENTS.md](AGENTS.md#aidge--ethos-u55).
+- **`tools/u55/`** estime avec Vela, par la conversion TFLite, le temps
+  d'inférence et la mémoire d'un modèle sur l'Ethos-U55, couche par couche.
+  Résultats dans [AGENTS.md](AGENTS.md#mesures-vela-sur-lethos-u55).
+- **`scripts/npu/export_classifier.py`**, notre premier script d'export, suit
+  la convention d'entrée du kit d'Alif (`pixel − 128`), pas celle du SDK.
+
+Ces exports demandent AIDGE et les outils du porteur (CLAUDE.md §3). Sur une
+machine sans wheel AIDGE (macOS), `scripts/npu/aidge_docker.sh` les exécute sur
+une machine Linux jointe en SSH.
 
 ## Notes d'échange
 

@@ -25,6 +25,9 @@ RUN pip install aidge-core==${AIDGE_VERSION} aidge-backend-cpu==${AIDGE_VERSION}
 RUN pip install tosa-tools==${TOSA_TOOLS_VERSION}
 
 # aidge_tosa et aidge_export_arm_ethos ne sont pas sur PyPI : installés depuis GitLab à des commits figés.
+# Ce sont les versions officielles. La chaîne du porteur (fork aidge-tosa-fork, branche feat/ethos-be-lowering de
+# son fork d'aidge_export_ethos, alif_aidge_sdk) s'ajoute à l'exécution par le PYTHONPATH : voir AGENTS.md,
+# « Aidge sous macOS ».
 # aidge_export_arm_ethos sans dépendances : cmake/ninja ne servent qu'à compiler le firmware, ce qui se fait hors du
 # conteneur ; Vela est déjà installé plus haut.
 RUN pip install "https://gitlab.eclipse.org/eclipse/aidge/aidge_tosa/-/archive/${AIDGE_TOSA_COMMIT}/aidge_tosa.tar.gz" \
