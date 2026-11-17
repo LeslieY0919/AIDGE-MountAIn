@@ -43,7 +43,7 @@ def main():
     OUT_DIR.mkdir(parents=True)
     shutil.copytree(DET_DIR / "dnn", OUT_DIR / "detector_dnn")
     shutil.copytree(CLS_DIR / "dnn", OUT_DIR / "classifier_dnn")
-    shutil.copy2(DET_DIR / "stb_image.h", OUT_DIR / "stb_image.h")
+    shutil.copy2(Path("third_party/stb_image.h"), OUT_DIR / "stb_image.h")
 
     # Signatures extern "C" sans conflit de header guards
     det_sig_args = [f"const {det_in_type}* input"] + [f"{t}** out_{i}" for i, (t, _) in enumerate(det_outs)]

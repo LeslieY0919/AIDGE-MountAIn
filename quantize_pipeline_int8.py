@@ -314,8 +314,7 @@ int main()
 
 
 def write_and_build_detector(out_dir, out_scales):
-    if Path("export_cpp_detector/stb_image.h").exists():
-        shutil.copy2("export_cpp_detector/stb_image.h", Path(out_dir) / "stb_image.h")
+    shutil.copy2("third_party/stb_image.h", Path(out_dir) / "stb_image.h")
 
     in_type, outs = parse_forward_signature(Path(out_dir) / "dnn/include/forward.hpp")
     boxes_type, boxes_name = outs[0]
