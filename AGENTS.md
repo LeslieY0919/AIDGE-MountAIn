@@ -12,8 +12,9 @@
 
 Sujet n° 3 du Challenge Aidge 2026, « AIDGE for Wildlife Monitoring » (proposé par MountAIn) : détecter les
 animaux sauvages et identifier l'espèce sur Cortex-M55 + Ethos-U55, la caméra capturant l'image et l'inférence
-s'exécutant localement sur le NPU. Le matériel du challenge envoyé par les organisateurs est une AppKit Alif
-Ensemble E7 (avec module caméra MT9M114 et écran) ; l'IBEX CORE cité dans la plaquette est le produit de MountAIn.
+s'exécutant localement sur le NPU. La carte du projet est l'AppKit Alif Ensemble E7 prêtée pour le challenge
+(avec module caméra MT9M114 et écran) ; c'est la cible définitive. La plaquette cite l'IBEX CORE de MountAIn,
+qui n'est pas utilisé.
 Les livrables sont publiés sous CC BY 4.0, à rendre avant le 2026-12-31, soutenance le 2027-01-14
 ([plaquette](https://deepgreen.ai/storage/PDF/Plaquette_ChallengeAidge.pdf),
 [règlement](https://deepgreen.ai/storage/PDF/Reglement-ChallengeAidge.pdf)).
@@ -187,8 +188,6 @@ mémoire comptent). HP = M55-HP + U55-256 à 400 MHz, HE = M55-HE + U55-128 à 1
   proche voisin peut se réécrire en Reshape + Concat. Pour que tout le détecteur passe sur le NPU, il faut ajouter
   à `aidge_tosa` Concat, Slice et le pooling avec padding, et accepter plusieurs sorties par région NPU. Ce sont
   autant de contributions possibles à Aidge (`aidge_tosa` est développé surtout par MountAIn).
-- Si l'on porte un jour le projet sur l'IBEX CORE (produit de MountAIn, peut-être basé sur un Alif Ensemble E3),
-  le plan M55 + U55 reste valable, mais le budget mémoire est à revérifier.
 
 ### Aidge sous macOS
 
