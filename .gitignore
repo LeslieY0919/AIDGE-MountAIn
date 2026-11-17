@@ -1,21 +1,27 @@
 # Environnements et caches Python
 .venv/
+.venv-*/
 venv/
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Datasets (regenerables via build_5species_dataset.py)
+# Datasets (regenerables via dataset/build_5species_dataset.py)
 dataset_wildlife/
 dataset_wildlife_backup/
 dataset_wildlife_staging/
+datasets/
 
 # Modeles et archives volumineuses (a partager via GitHub Releases)
 *.onnx
+*.onnx.data
 *.pt
 *.pth
+*.tflite
 *.tar.gz
 *.zip
+models/
+runs/
 
 # Dossiers de compilation CMake et binaires
 **/build/
@@ -24,15 +30,32 @@ dataset_wildlife_staging/
 *.so
 *.a
 *.bin
+*.axf
+*.elf
 wildlife_pipeline
 run_export
 
-# Exports C++ generes automatiquement par Aidge (poids volumineux)
-export_cpp_detector_int8/
-export_cpp_classifier/
-export_cpp_classifier_int8/
+# Exports C++ generes automatiquement par Aidge (regenerables par les scripts de export/)
+export_cpp_*/
+export_tmp*/
 standalone_wildlife_cpp/detector_dnn/
 standalone_wildlife_cpp/classifier_dnn/
+exported_graph.mmd
 
-# Images de sortie temporaires
-full_cpp_pipeline_result.jpg
+# Images et fichiers de sortie temporaires (ecrits a la racine par les scripts)
+*_result.jpg
+result_*.jpg
+debug_*.jpg
+crop_animal_*.jpg
+*_det.jpg
+dump_pixels.txt
+*.bak
+
+# Outils et sauvegardes propres a la carte Alif E7 (locaux, non partages)
+external/
+backup/
+
+# Notes et reglages propres a chaque machine
+CLAUDE.local.md
+scripts/env.local.sh
+.DS_Store
