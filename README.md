@@ -19,24 +19,38 @@ d'architecture, pièges connus de la chaîne outil) est dans **[CLAUDE.md](CLAUD
 ## Démarrage
 
 ```bash
-python3.12 -m venv .venv && source .venv/bin/activate   # Python 3.11 ou 3.12, pas 3.13
-make install                                            # chaîne complète
+make venv                      # crée .venv avec un Python 3.11/3.12
+source .venv/bin/activate
+make install                   # chaîne complète
 ```
 
-`make install` installe le paquet `mountain` en mode éditable. **Cette étape
-n'est pas optionnelle** : les scripts l'importent, et sans elle chacun échoue
-sur `ModuleNotFoundError: No module named 'mountain'`. C'est le prix du layout
-`src/`, et c'est voulu — il n'y a plus d'import accidentel depuis le
-répertoire courant.
+Trois points sur lesquels on se casse les dents sans ces cibles :
 
-Pour ne parler qu'à la carte, `make install-board` suffit et reste léger.
+- **la version.** AIDGE exige Python **3.11 ou 3.12** — ni 3.13, ni moins.
+  `make` ne prend donc pas `python` au hasard dans le `PATH` : il cherche le
+  premier interpréteur compatible (`python3.12`, `python3.11`, `python3`), en
+  laissant gagner un venv déjà actif. Sur macOS, `python3` est très souvent un
+  3.9 livré par le système, et `python` n'existe pas du tout. Forcer avec
+  `make PYTHON=/chemin/vers/python3.12 <cible>` ;
+- **l'environnement virtuel.** Homebrew et les Python de distribution se
+  déclarent « externally managed » (PEP 668) et refusent toute installation
+  en dehors d'un venv. `make install` le détecte et dit quoi faire, au lieu de
+  laisser `pip` répondre par un pavé ;
+- **l'installation elle-même n'est pas optionnelle.** Les scripts importent le
+  paquet `mountain` ; sans `make install`, chacun échoue sur
+  `ModuleNotFoundError: No module named 'mountain'`. C'est le prix du layout
+  `src/`, et c'est voulu — il n'y a plus d'import accidentel depuis le
+  répertoire courant.
+
+Pour ne parler qu'à la carte, `make install-board` suffit : cinq paquets, ni
+torch ni AIDGE.
 
 `make install` ajoute aussi `aidge-quantization` avec `--no-deps`. Ce
-`--no-deps` est volontaire : les
-métadonnées du paquet déclarent `aidge-backend-cuda` comme obligatoire alors
-que la chaîne CPU utilisée ici n'en a pas besoin. `pip check` signalera donc
-une dépendance absente — sans conséquence. Pour le backend CUDA, installer
-`aidge-quantization` sans `--no-deps` et configurer `CUDA_PATH`.
+`--no-deps` est volontaire : les métadonnées du paquet déclarent
+`aidge-backend-cuda` comme obligatoire alors que la chaîne CPU utilisée ici
+n'en a pas besoin. `pip check` signalera donc une dépendance absente — sans
+conséquence. Pour le backend CUDA, installer `aidge-quantization` sans
+`--no-deps` et configurer `CUDA_PATH`.
 
 `make help` liste toutes les cibles.
 
@@ -81,6 +95,7 @@ changements — voir le [README du dossier](cpp/wildlife_pipeline/README.md).
 ## Se connecter à la carte
 
 ```bash
+make venv && source .venv/bin/activate
 make install-board                   # léger : pyserial, sans torch ni AIDGE
 make board-list                      # quels ports série sont visibles ?
 make connect                         # console applicative, journalisée dans artifacts/
@@ -193,6 +208,25 @@ Les deux écarts sont sans conséquence pour la validation sur hôte Linux, et
 bloquants pour l'embarqué. Mesurer avant de décider (cf. CLAUDE.md §10).
 
 ## Dépannage
+
+**`Package 'mountain' requires a different Python: 3.9.x not in '<3.13,>=3.11'`**
+
+Le `pip` utilisé appartient à un Python trop ancien. AIDGE impose 3.11 ou
+3.12. Les cibles `make` choisissent l'interpréteur pour vous :
+
+```bash
+make venv && source .venv/bin/activate && make install
+```
+
+Si aucun Python compatible n'est présent, `make` liste les interpréteurs
+visibles et leurs versions plutôt que d'échouer sur un message de `pip`.
+
+**`error: externally-managed-environment`**
+
+Le Python visé refuse d'installer hors environnement virtuel (PEP 668), ce qui
+est le cas de Homebrew. Créer le venv : `make venv && source .venv/bin/activate`.
+En dernier recours, `make PIP_FLAGS=--break-system-packages install` passe
+outre — au risque d'abîmer l'installation Python du système.
 
 **`ModuleNotFoundError: No module named 'mountain'`**
 
