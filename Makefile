@@ -78,6 +78,34 @@ require-env: require-python
 	  exit 1; \
 	fi
 
+# AIDGE ne publie des roues que pour Linux x86_64 et Windows amd64 : ni macOS,
+# ni ARM, et aucun sdist de repli. Sans ce garde-fou, `make install` part dans
+# une résolution pip de plusieurs minutes pour finir sur un
+# « Could not find a version that satisfies the requirement aidge-core », qui
+# ressemble à un problème de version alors que c'est un problème de plateforme.
+.PHONY: require-platform
+require-platform: require-python
+	@if ! $(PYTHON) -c 'import platform, sys; \
+	  s, m = platform.system(), platform.machine(); \
+	  sys.exit(0 if (s == "Linux" and m == "x86_64") \
+	           or (s == "Windows" and m in ("AMD64", "x86_64")) else 1)' \
+	  >/dev/null 2>&1; then \
+	  echo "AIDGE ne fournit pas de paquet pour cette plateforme :"; \
+	  echo "  $$($(PYTHON) -c 'import platform; print(platform.system(), platform.machine())')"; \
+	  echo; \
+	  echo "Les roues publiées couvrent uniquement Linux x86_64 et Windows amd64."; \
+	  echo "Il n'existe ni roue macOS ni sdist : aucune version de Python n'y change rien."; \
+	  echo; \
+	  echo "Cette machine peut en revanche parler à la carte :"; \
+	  echo "  make install-board"; \
+	  echo; \
+	  echo "La chaîne d'entraînement et d'export doit tourner sur une machine"; \
+	  echo "Linux x86_64 (ou Windows amd64). Voir la section Prérequis du README."; \
+	  echo; \
+	  echo "Pour tenter quand même : make FORCE_PLATFORM=1 install"; \
+	  test -n "$(FORCE_PLATFORM)" || exit 1; \
+	fi
+
 venv: require-python  ## Crée .venv avec un interpréteur compatible
 	$(PYTHON) -m venv .venv
 	@echo
@@ -86,7 +114,7 @@ venv: require-python  ## Crée .venv avec un interpréteur compatible
 	@echo "  make install         # chaîne complète"
 	@echo "  make install-board   # ou le minimum pour la carte"
 
-install: require-env  ## Installe la chaîne complète (entraînement, export, quantification)
+install: require-platform require-env  ## Installe la chaîne complète (entraînement, export, quantification)
 	$(PYTHON) -m pip install $(PIP_FLAGS) -e ".[ml,dev]"
 	$(PYTHON) -m pip install $(PIP_FLAGS) --no-deps aidge-quantization
 
