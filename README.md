@@ -167,10 +167,30 @@ Les 57 600 bauds de `configs/board.yaml` viennent de cette mesure : fenêtre
 est un spinner ANSI, pas une application traçant ses temps d'inférence —
 relancer `--scan` quand le firmware applicatif tournera.
 
-Sur la carte du groupe (AppKit avec J-Link embarquée), macOS ne voit qu'**un
-seul** port : les cavaliers J15 le relient soit à l'UART du Secure Enclave
-(position par défaut), soit à la console applicative (UART2). Détails dans
-[AGENTS.md](AGENTS.md#matériel).
+### Ce qui est démontré, et ce qui ne l'est pas
+
+**La réception fonctionne.** `--scan` décode proprement à 57 600 bauds un flux
+périodique et intelligible (séquences ANSI + spinner). Cela prouve le lien
+physique, le bon port et le bon débit.
+
+**L'émission n'est pas démontrée.** Écrire sur ce port bloque la réception
+~2,2 s, puis le flux se déverse d'un coup avec 4 octets parasites
+(`04 FF FA 03`) en tête. Mesuré avec témoin : sans envoi, une trame toutes les
+~0,8 s ; avec envoi, rien pendant 2,2 s puis une rafale. C'est un artefact de
+reprise, pas une réponse — rien n'indique que la carte traite ce qu'on lui
+envoie. Utiliser `--read-only` pour lire des traces.
+
+Un aller-retour réel se démontrera soit avec un firmware applicatif exposant
+une commande, soit via SETOOLS sur l'UART du Secure Enclave, qui fait une vraie
+poignée de main et renvoie la référence du composant (`make board-check`).
+SETOOLS n'existe que pour Linux et Windows.
+
+Deux précisions tirées de la carte du groupe (AppKit avec J-Link embarquée) :
+macOS n'y voit qu'**un seul** port, que les cavaliers J15 relient soit à
+l'UART du Secure Enclave (position par défaut), soit à la console applicative
+(UART2) ; et SETOOLS est aussi publié pour macOS (1.112.00, dossier
+`app-release-exec-macos`), c'est la version que désigne `scripts/board/env.sh`.
+Détails dans [AGENTS.md](AGENTS.md#matériel).
 
 Quand deux ports indiscernables apparaissent, le script ne devine pas — les
 deux interfaces CDC d'un même composite USB ont le même genre de nom. Il
