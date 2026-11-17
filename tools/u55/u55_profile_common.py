@@ -7,9 +7,11 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "build" / "ml_profile"
-MLEK = ROOT / "external" / "alif_ml-embedded-evaluation-kit"
+from mountain import paths
+
+ROOT = paths.ROOT
+OUT_DIR = paths.U55_PROFILE
+MLEK = paths.MLEK
 VELA = MLEK / "resources_downloaded" / "env" / "bin" / "vela"
 # Cibles Vela : hp = M55-HP + U55-256 à 400 MHz (mêmes paramètres que H256 dans set_up_default_resources.py du kit),
 # he = M55-HE + U55-128 à 160 MHz. Dans les deux cas, poids en MRAM et activations en SRAM.
@@ -24,7 +26,7 @@ def vela_args(target):
     return [
         f"--accelerator-config={accelerator}",
         "--optimise", "Performance",
-        "--config", str(MLEK / "scripts" / "vela" / "ensemble_vela.ini"),
+        "--config", str(paths.VELA_INI),
         "--memory-mode=Shared_Sram",
         f"--system-config={system_config}",
         "--arena-cache-size=2097152",

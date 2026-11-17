@@ -1,8 +1,9 @@
 # Environnement Aidge (Linux x86_64) : Aidge 0.10.1 + aidge_tosa + aidge_export_arm_ethos + Vela 5.1.0, pour exporter
 # les modèles et prévisualiser le partitionnement NPU. Aidge ne publie des wheels que pour Linux x86_64 et Windows :
-# sous macOS, il tourne donc dans Docker sur une machine Linux ; construction et exécution via scripts/dev2_aidge.sh.
+# sous macOS, il tourne donc dans Docker sur une machine Linux ; construction et exécution via
+# scripts/npu/aidge_docker.sh.
 # Uniquement des wheels précompilées, sans compilateur ; environ 150 Mo à télécharger. Le firmware de la carte est
-# compilé et flashé à part (scripts/build_img_class.sh).
+# compilé et flashé à part (scripts/board/build_img_class.sh).
 FROM python:3.12-slim-bookworm
 
 ARG AIDGE_VERSION=0.10.1

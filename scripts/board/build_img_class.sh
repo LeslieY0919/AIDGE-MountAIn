@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Compile alif_img_class (cœur M55-HP de l'AppKit-e7) et génère le paquet ATOC dans SETOOLS.
+# Compile alif_img_class, l'exemple de classification d'images du kit d'évaluation ML d'Alif (cœur M55-HP de
+# l'AppKit-e7), et génère le paquet ATOC dans SETOOLS. Sert à vérifier la carte (caméra, écran, NPU) et à mesurer
+# un classifieur exporté par scripts/npu/export_classifier.py.
 # Tout se passe sur l'ordinateur, rien n'est écrit sur la carte ; le flash se fait avec app-write-mram,
 # après accord de l'utilisateur.
 #
@@ -10,8 +12,8 @@
 #   SHOW_INF_TIME=1  affiche sur l'écran le temps de prétraitement + inférence + post-traitement
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-source "$PROJECT_ROOT/scripts/env.sh"
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+source "$PROJECT_ROOT/scripts/board/env.sh"
 
 BUILD_DIR="$PROJECT_ROOT/build/mlek_img_class_hp"
 # CMake 3.30.5 de l'environnement virtuel du kit

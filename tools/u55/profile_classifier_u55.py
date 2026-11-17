@@ -2,7 +2,7 @@
 # Évaluation de la vitesse et de la mémoire des classifieurs d'espèces candidats (2e étape) sur Ethos-U55-256 (M55-HP de
 # l'Alif E7) : Keras (pré-entraîné sur ImageNet) → TFLite int8 → Vela. La tête compte provisoirement 20 espèces, uniquement
 # pour mesurer vitesse et mémoire. S'exécute uniquement sur l'ordinateur, rien n'est écrit sur la carte.
-# Usage : .venv-yolo/bin/python u55/profile_classifier_u55.py
+# Usage : .venv-yolo/bin/python tools/u55/profile_classifier_u55.py
 import os
 
 # tf_keras (Keras 2), le mieux pris en charge par TFLiteConverter
@@ -59,7 +59,7 @@ def to_int8_tflite(model, samples, path):
 
 
 def main():
-    # Tous les fichiers intermédiaires vont dans build/ml_profile
+    # Tous les fichiers intermédiaires vont dans artifacts/u55_profile
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     os.chdir(OUT_DIR)
     images = calibration_images()

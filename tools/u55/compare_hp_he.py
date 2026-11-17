@@ -2,7 +2,7 @@
 # Compile avec Vela des modèles int8 existants pour le HP (M55-HP + U55-256 à 400 MHz) et le HE (M55-HE + U55-128 à 160 MHz),
 # puis compare vitesse et mémoire. Les modèles viennent de profile_yolov10_u55.py et profile_classifier_u55.py.
 # S'exécute uniquement sur l'ordinateur, rien n'est écrit sur la carte.
-# Usage : .venv-yolo/bin/python u55/compare_hp_he.py build/ml_profile/yolov10n_relu_nopsa_256/*_full_integer_quant.tflite ...
+# Usage : .venv-yolo/bin/python tools/u55/compare_hp_he.py artifacts/u55_profile/yolov10n_relu_nopsa_256/*_full_integer_quant.tflite ...
 import argparse
 import json
 from pathlib import Path

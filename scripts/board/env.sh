@@ -1,15 +1,17 @@
-# Variables d'environnement pour la carte Alif E7. Utilisation : source scripts/env.sh
+# Variables d'environnement pour la carte Alif E7. Utilisation : source scripts/board/env.sh
 # Les valeurs par défaut correspondent à une installation sous macOS dans ~/opt ; chaque machine peut les
-# redéfinir dans scripts/env.local.sh (non versionné), chargé en premier.
+# redéfinir dans scripts/board/env.local.sh (non versionné), chargé en premier.
 
 # Racine du dépôt (fonctionne avec bash et zsh)
-WILDLIFE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")/.." && pwd)"
+WILDLIFE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")/../.." && pwd)"
 export WILDLIFE_ROOT
-[ -f "$WILDLIFE_ROOT/scripts/env.local.sh" ] && source "$WILDLIFE_ROOT/scripts/env.local.sh"
+[ -f "$WILDLIFE_ROOT/scripts/board/env.local.sh" ] && source "$WILDLIFE_ROOT/scripts/board/env.local.sh"
 
 # Emplacement des outils (dossier utilisateur, installés sans sudo)
 export JLINK_ROOT="${JLINK_ROOT:-$HOME/opt/SEGGER/JLink_V984}"
 export ALIF_SETOOLS_ROOT="${ALIF_SETOOLS_ROOT:-$HOME/opt/alif/app-release-exec-macos}"
+# Même dossier sous le nom qu'attendent scripts/board/connect.py --setools et CLAUDE.md
+export SETOOLS="${SETOOLS:-$ALIF_SETOOLS_ROOT}"
 export ARM_GCC_ROOT="${ARM_GCC_ROOT:-$HOME/opt/arm/arm-gnu-toolchain-13.3.rel1-darwin-arm64-arm-none-eabi}"
 
 # Kit d'évaluation ML d'Alif (sources, environnement virtuel Python, Vela et CMake en version figée)

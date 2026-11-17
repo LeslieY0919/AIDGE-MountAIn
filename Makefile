@@ -45,6 +45,7 @@ PIP_FLAGS ?=
 .PHONY: help venv install detector-weights dataset train-classifier \
         export-detector export-classifier quantize build-cpp \
         install-board run-reference check test board-list board-check connect \
+        board-firmware \
         clean-exports clean-artifacts
 
 help:  ## Affiche cette aide
@@ -130,6 +131,11 @@ board-check:  ## Vérifie que SETOOLS voit bien un E7
 
 connect:  ## Ouvre la console série de la carte (115200 bauds, journalisée)
 	$(PYTHON) scripts/board/connect.py --log
+
+# Compile sur l'ordinateur uniquement : rien n'est écrit sur la carte. Le flash
+# (app-write-mram) reste une étape manuelle, voir AGENTS.md.
+board-firmware:  ## Compile la démo img_class du kit Alif et son paquet ATOC (sans flasher)
+	scripts/board/build_img_class.sh
 
 # --- 4. vérification -----------------------------------------------------
 

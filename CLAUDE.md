@@ -2,6 +2,8 @@
 
 > **Contexte projet.** Autoportant : aucun autre document n'est nécessaire pour démarrer.
 > Pour l'organisation du dépôt, voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+> Outillage de la carte, mesures sur l'Ethos-U55 et opérations à faire valider avant d'écrire sur la carte :
+> voir @AGENTS.md.
 >
 > Deux conventions pour la suite de ce fichier :
 > - **[SOURCÉ]** = tiré des slides du kick-off, de la réunion de lancement ou des README des dépôts. Fiable.

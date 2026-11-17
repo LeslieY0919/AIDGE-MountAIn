@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # Exporte un classifieur ONNX vers l'Ethos-U55 avec Aidge : quantification INT8 (PTQ) → TOSA (aidge_tosa) → Vela.
-# Le résultat, <out>/output/model_vela.tflite, se passe ensuite à scripts/build_img_class.sh (MODEL_PATH) pour
+# Le résultat, <out>/output/model_vela.tflite, se passe ensuite à scripts/board/build_img_class.sh (MODEL_PATH) pour
 # être exécuté sur la carte par le kit d'évaluation ML d'Alif.
 #
 # Le modèle exporté prend une image entrelacée (NHWC) en int8 avec q = pixel - 128 : c'est la conversion que fait
 # déjà le kit d'Alif, il n'y a donc aucune normalisation à faire sur la carte.
 #
-# S'exécute dans l'image Docker de aidge/ (Aidge n'a pas de wheel macOS), depuis la racine du dépôt :
-#   scripts/dev2_aidge.sh push aidge/ samples/ external/alif_ml-embedded-evaluation-kit/scripts/vela/ensemble_vela.ini
-#   scripts/dev2_aidge.sh run python aidge/export_classifier_npu.py --onnx models/mobilenetv2-7.onnx --size 224 \
-#       --calib samples
-#   scripts/dev2_aidge.sh fetch build/aidge_npu/mobilenetv2-7/output/model_vela.tflite
+# Demande aidge_tosa, aidge_export_arm_ethos et Vela : s'exécute dans l'environnement décrit par
+# docker/aidge/Dockerfile. Sur une machine sans wheel Aidge (macOS), passer par scripts/npu/aidge_docker.sh :
+#   scripts/npu/aidge_docker.sh push data/samples/ external/alif_ml-embedded-evaluation-kit/scripts/vela/ensemble_vela.ini
+#   scripts/npu/aidge_docker.sh run python scripts/npu/export_classifier.py \
+#       --onnx models/classifier/species_classifier.onnx --size 128
+#   scripts/npu/aidge_docker.sh fetch exports/npu/species_classifier/output/model_vela.tflite
 import argparse
 import csv
 import json
@@ -27,11 +28,8 @@ import aidge_onnx
 import aidge_quantization
 from aidge_export_arm_ethos.export import ethos_export_config, export
 
-ROOT = Path(__file__).resolve().parents[1]
-# Même configuration Vela que u55/u55_profile_common.py : M55-HP + U55-256, poids en MRAM, activations en SRAM
-ENSEMBLE_INI = ROOT / "external" / "alif_ml-embedded-evaluation-kit" / "scripts" / "vela" / "ensemble_vela.ini"
-MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+from mountain import paths
+from mountain.preprocess import IMAGENET_MEAN as MEAN, IMAGENET_STD as STD
 
 
 def load_images(dirs, size, count):
@@ -139,19 +137,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--onnx", required=True, type=Path)
     ap.add_argument("--size", type=int, default=224, help="côté de l'image d'entrée")
-    ap.add_argument("--calib", nargs="+", default=["samples"], help="dossiers d'images de calibration")
+    ap.add_argument("--calib", nargs="+", default=[str(paths.SAMPLES)], help="dossiers d'images de calibration")
     ap.add_argument("--nb-calib", type=int, default=32)
     ap.add_argument("--input-norm", choices=("imagenet", "pm1"), default="imagenet",
                     help="normalisation avec laquelle le modèle a été entraîné : moyenne/écart-type ImageNet (repliée "
                          "dans la première convolution) ou (pixel - 127.5) / 127.5")
     ap.add_argument("--input-format", choices=("nhwc", "nchw"), default="nhwc", help="disposition de l'entrée du modèle exporté")
-    ap.add_argument("--out", type=Path, default=None, help="par défaut build/aidge_npu/<nom du modèle>")
+    ap.add_argument("--out", type=Path, default=None, help="par défaut exports/npu/<nom du modèle>")
     ap.add_argument("--accelerator", default="ethos-u55-256")
     ap.add_argument("--system-config", default="RTSS_HP_SRAM_MRAM")
-    ap.add_argument("--vela-ini", type=Path, default=ENSEMBLE_INI)
+    ap.add_argument("--vela-ini", type=Path, default=paths.VELA_INI,
+                    help="même configuration Vela que tools/u55/ : poids en MRAM, activations en SRAM")
     args = ap.parse_args()
 
-    out = args.out or ROOT / "build" / "aidge_npu" / args.onnx.stem
+    out = args.out or paths.EXPORT_NPU / args.onnx.stem
     out.mkdir(parents=True, exist_ok=True)
     shape = [1, 3, args.size, args.size]
     images = load_images(args.calib, args.size, args.nb_calib)

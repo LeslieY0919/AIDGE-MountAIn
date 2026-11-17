@@ -82,7 +82,8 @@ scripts/detector/      récupération des poids, fine-tuning, export C++
 scripts/classifier/    construction du dataset, entraînement, export C++
 scripts/quantize/      PTQ int8 des deux modèles
 scripts/pipeline/      assemblage du C++ autonome, référence Python
-scripts/board/         console série de la carte cible
+scripts/board/         console série, outils de la carte, firmware de démonstration
+scripts/npu/           export AIDGE → TOSA → Vela pour l'Ethos-U55
 ```
 
 `scripts/board/` est le premier morceau qui touche au matériel. Sa logique
@@ -93,6 +94,24 @@ UART : la console applicative à 115 200 bauds [POSÉ] et celle du Secure
 Enclave à 55 000. Les confondre ne lève aucune erreur — d'où le garde-fou
 `allowed_bauds` de `configs/board.yaml` et le refus de deviner entre deux
 ports indiscernables.
+
+`scripts/board/` contient aussi deux scripts shell, parce qu'ils ne font
+qu'enchaîner des outils externes : `env.sh` fixe les chemins de J-Link, de
+SETOOLS, de la toolchain Arm et du kit d'évaluation ML d'Alif (clone local
+dans `external/`, non versionné) ; `build_img_class.sh` compile l'exemple de
+classification de ce kit avec un modèle donné et prépare le paquet ATOC. Aucun
+des deux n'écrit sur la carte : le flash reste une étape manuelle, soumise à
+validation (voir [AGENTS.md](../AGENTS.md)).
+
+`scripts/npu/` est le début du portage sur le NPU. `export_classifier.py`
+enchaîne la PTQ d'AIDGE, `aidge_tosa` et Vela pour produire le `.tflite` que
+le NPU exécute ; il prend ses chemins dans `mountain.paths` et sa
+normalisation dans `mountain.preprocess`, comme le reste de la chaîne. Cet
+export demande `aidge_tosa`, `aidge_export_arm_ethos` et Vela, qui ne sont pas
+dans `make install` : l'environnement est décrit par `docker/aidge/Dockerfile`.
+`aidge_docker.sh` sert aux machines sans wheel AIDGE (macOS) : il exécute une
+commande dans cette image sur une machine Linux jointe en SSH. Les sorties
+vont dans `exports/npu/`.
 
 ### `cpp/` — la cible
 
@@ -152,6 +171,19 @@ pytest, laissant `test_*.py` disponible pour de vrais tests unitaires.
 les opérateurs `Generic` d'un graphe avant de tenter un export, balayer les
 options de PTQ, explorer le tiling. On les lance ponctuellement pour
 comprendre, pas pour produire.
+
+`tools/u55/` y ajoute les estimations de Vela pour l'Ethos-U55 : temps
+d'inférence, pic de SRAM et taille en MRAM d'un modèle, couche par couche,
+sans carte. Ces outils passent par TFLite et non par AIDGE ; ils servent à
+comparer des tailles d'entrée et des architectures, et écrivent dans
+`artifacts/u55_profile/`.
+
+### `notes/` — les notes d'échange
+
+Ce que chacun a essayé, mesuré ou découvert, et les questions à trancher
+ensemble. Ce ne sont pas des documents de référence : une note peut être
+fausse ou périmée, elle porte un auteur, une date et un état. Ce qui devient
+stable remonte dans le README, `CLAUDE.md` ou `AGENTS.md`.
 
 ### `attic/` — les itérations historiques
 

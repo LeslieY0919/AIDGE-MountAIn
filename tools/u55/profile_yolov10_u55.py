@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Évaluation de la vitesse et de la mémoire de YOLOv10n sur Ethos-U55-256 (M55-HP de l'Alif E7) :
 # PyTorch → ONNX → TFLite int8 (onnx2tf) → Vela. S'exécute uniquement sur l'ordinateur, rien n'est écrit sur la carte.
-# Usage : .venv-yolo/bin/python u55/profile_yolov10_u55.py [--imgsz 256 320]
+# Usage : .venv-yolo/bin/python tools/u55/profile_yolov10_u55.py [--imgsz 256 320]
 import argparse
 import json
 import os
@@ -12,9 +12,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from u55_profile_common import OUT_DIR, ROOT, calibration_images, letterbox, run_vela
+from mountain import paths
 
-WEIGHTS = ROOT / "models" / "pretrained" / "yolov10n.pt"
+from u55_profile_common import OUT_DIR, calibration_images, letterbox, run_vela
+
+WEIGHTS = paths.PRETRAINED_DIR / "yolov10n.pt"
 
 # Variantes : d'origine ; tous les SiLU remplacés par ReLU (ReLU se fusionne dans la convolution, SiLU demande une table
 # et une multiplication en plus) ; puis sans le bloc d'attention PSA.
@@ -122,7 +124,7 @@ def main():
     ap.add_argument("--variants", nargs="+", default=list(VARIANTS), choices=VARIANTS)
     args = ap.parse_args()
 
-    # Tous les fichiers intermédiaires vont dans build/ml_profile
+    # Tous les fichiers intermédiaires vont dans artifacts/u55_profile
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     os.chdir(OUT_DIR)
     images = calibration_images()

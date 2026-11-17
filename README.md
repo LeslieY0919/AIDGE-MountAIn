@@ -118,6 +118,11 @@ qui échoue parce qu'on parlait sur le lien pendant la programmation. Les
 115 200 bauds sont une **hypothèse** (REQ-113), à confirmer sur la carte et à
 corriger dans `configs/board.yaml`.
 
+Sur la carte du groupe (AppKit avec J-Link embarquée), macOS ne voit qu'**un
+seul** port : les cavaliers J15 le relient soit à l'UART du Secure Enclave
+(position par défaut), soit à la console applicative (UART2). Détails dans
+[AGENTS.md](AGENTS.md#matériel).
+
 Quand deux ports indiscernables apparaissent, le script ne devine pas — les
 deux interfaces CDC d'un même composite USB ont le même genre de nom. Il
 demande `--port`.
@@ -135,17 +140,54 @@ export SETOOLS=/chemin/vers/app-release-exec-linux
 (cd $SETOOLS && ./tools-config -a -b 55000 -c /dev/alif-se)
 ```
 
+### Outils de la carte et firmware de démonstration
+
+```bash
+source scripts/board/env.sh          # J-Link, SETOOLS, toolchain Arm, kit d'Alif
+make board-firmware                  # compile la démo img_class du kit, sans flasher
+```
+
+`scripts/board/env.sh` fixe les chemins des outils (redéfinissables dans
+`scripts/board/env.local.sh`, non versionné) et définit `$SETOOLS`.
+`make board-firmware` compile l'exemple de classification du kit d'évaluation
+ML d'Alif avec le modèle de son choix et prépare le paquet ATOC ; **rien n'est
+écrit sur la carte**. Versions des outils, mode d'emploi et opérations à faire
+valider avant tout flash : [AGENTS.md](AGENTS.md).
+
+## Vers l'Ethos-U55
+
+Deux compléments à la chaîne sur hôte, tous deux sans carte :
+
+- **`tools/u55/`** estime avec Vela le temps d'inférence et la mémoire d'un
+  modèle sur l'Ethos-U55, couche par couche. Résultats dans
+  [AGENTS.md](AGENTS.md#mesures-vela-sur-lethos-u55).
+- **`scripts/npu/export_classifier.py`** exporte un classifieur ONNX avec
+  AIDGE : PTQ int8 → TOSA (`aidge_tosa`) → Vela → `.tflite` pour le NPU. Il
+  demande l'environnement de `docker/aidge/` ; sur une machine sans wheel
+  AIDGE (macOS), `scripts/npu/aidge_docker.sh` l'exécute sur une machine Linux
+  jointe en SSH.
+
+## Notes d'échange
+
+[notes/](notes/README.md) rassemble ce que chacun a essayé, mesuré ou
+découvert, et les questions à trancher ensemble. Ce ne sont pas des documents
+de référence : on y écrit pour se tenir au courant, et on reporte ici ou dans
+CLAUDE.md ce qui est devenu stable.
+
 ## Carte du dépôt
 
 ```
 configs/        toute la configuration — seuils, résolutions, hyperparamètres
 src/mountain/   le socle commun, importable : chemins, config, pré-traitement, AIDGE
 scripts/        les points d'entrée exécutables, groupés par étape de la chaîne
-                (detector, classifier, quantize, pipeline, board)
+                (detector, classifier, quantize, pipeline, board, npu)
 cpp/            sources C++ : harnais du détecteur, instantané du pipeline, tiers
 tests/          contrôles de parité entre la référence Python et le C++
 tools/          audits et diagnostics ponctuels, hors chaîne nominale
+                (dont u55/ : estimations Vela pour l'Ethos-U55)
+docker/         image de l'environnement AIDGE → TOSA → Vela
 docs/           architecture et table de migration
+notes/          notes d'échange entre membres du groupe
 attic/          itérations historiques conservées pour référence
 ```
 

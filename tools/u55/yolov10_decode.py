@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Implémentation de référence du décodage CPU des sorties brutes de la branche one-to-one de YOLOv10 (le code C du M55 suivra
 # celle-ci), et comparaison entre le TFLite int8 et le modèle flottant.
-# Usage : .venv-yolo/bin/python u55/yolov10_decode.py [--variant silu_psa] [--imgsz 256]
+# Usage : .venv-yolo/bin/python tools/u55/yolov10_decode.py [--variant silu_psa] [--imgsz 256]
 import argparse
 
 import numpy as np

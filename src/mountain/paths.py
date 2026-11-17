@@ -13,7 +13,7 @@ Convention des trois familles de répertoires :
 - ``artifacts/`` résultats de run (images annotées, tampons ``.bin``) — jetables.
 
 Seuls ``configs/``, ``data/samples/``, ``src/``, ``scripts/``, ``cpp/``,
-``tests/``, ``tools/`` et ``docs/`` sont versionnés.
+``tests/``, ``tools/``, ``docker/``, ``docs/`` et ``notes/`` sont versionnés.
 """
 
 from __future__ import annotations
@@ -101,6 +101,23 @@ EXPORT_PIPELINE = EXPORTS / "wildlife_pipeline"
 #: Sous-dossiers recopiés depuis les exports int8 des deux modèles.
 PIPELINE_DETECTOR_DNN = EXPORT_PIPELINE / "detector_dnn"
 PIPELINE_CLASSIFIER_DNN = EXPORT_PIPELINE / "classifier_dnn"
+
+# ------------------------------------------------- carte et Ethos-U55
+
+#: Dépôts tiers clonés à côté du code, non versionnés.
+EXTERNAL = ROOT / "external"
+#: Kit d'évaluation ML d'Alif (TFLM, Vela, exemples caméra et LCD), utilisé par
+#: ``scripts/board/build_img_class.sh``.
+MLEK = EXTERNAL / "alif_ml-embedded-evaluation-kit"
+#: Configuration Vela des cœurs de l'Ensemble E7, fournie par le kit.
+VELA_INI = MLEK / "scripts" / "vela" / "ensemble_vela.ini"
+#: Exports Aidge -> TOSA -> Vela pour l'Ethos-U55 (``scripts/npu/``), un
+#: sous-dossier par modèle.
+EXPORT_NPU = EXPORTS / "npu"
+#: Estimations Vela et rapports par couche produits par ``tools/u55/``.
+U55_PROFILE = ARTIFACTS / "u55_profile"
+#: Poids publics servant de substitut pour le profilage (YOLOv10n).
+PRETRAINED_DIR = MODELS / "pretrained"
 
 # ------------------------------------------------------------ sources C++
 

@@ -78,6 +78,33 @@ Les chemins y sont restés sous leur forme ancienne : ces scripts ne tourneront
 pas tels quels depuis la nouvelle arborescence. C'est volontaire — ce sont des
 archives, pas du code à maintenir.
 
+## Depuis `clean-main` après la PR #1
+
+`clean-main` avait reçu entre-temps une autre réorganisation (PR #1 :
+`training/`, `export/`, `checks/`, `dataset/`, `archive/`, `samples/`,
+`third_party/`, `standalone_wildlife_cpp/`). Elle est **remplacée** par
+l'arborescence décrite ici : pour tous les scripts de la chaîne, c'est la
+version de cette branche qui est gardée. Seuls les fichiers qui n'existaient
+que sur `clean-main` ont été déplacés :
+
+| Sur `clean-main` | Ici | Note |
+|---|---|---|
+| `scripts/env.sh` | `scripts/board/env.sh` | définit aussi `$SETOOLS` ; réglages locaux dans `scripts/board/env.local.sh` |
+| `scripts/build_img_class.sh` | `scripts/board/build_img_class.sh` | cible `make board-firmware` |
+| `scripts/mlek_requirements_tflm.txt` | `scripts/board/mlek_requirements_tflm.txt` | |
+| `scripts/dev2_aidge.sh` | `scripts/npu/aidge_docker.sh` | |
+| `aidge/export_classifier_npu.py` | `scripts/npu/export_classifier.py` | chemins par `mountain.paths`, normalisation par `mountain.preprocess` ; sorties dans `exports/npu/` |
+| `aidge/Dockerfile` | `docker/aidge/Dockerfile` | |
+| `u55/*.py` | `tools/u55/*.py` | sorties dans `artifacts/u55_profile/` (avant : `build/ml_profile/`) |
+| `AGENTS.md` | `AGENTS.md` | réduit à l'outillage de la carte et aux mesures ; le contexte du projet est dans `CLAUDE.md` |
+| — | `notes/` | **nouveau** : notes d'échange |
+
+Les autres dossiers de `clean-main` correspondent ainsi : `training/`,
+`export/` et `dataset/` → `scripts/` ; `checks/` → `tests/` et `tools/` ;
+`archive/` → `attic/` ; `samples/` → `data/samples/` ; `third_party/` →
+`cpp/third_party/stb/` ; `standalone_wildlife_cpp/` → `cpp/wildlife_pipeline/` ;
+`class_names.json` → `configs/classes.json`.
+
 ## Sorti du suivi git
 
 ### Exports générés — 1,2 Go, 4 780 fichiers
