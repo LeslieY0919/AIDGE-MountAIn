@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.16)
+project(wildlife_pipeline CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_BUILD_RPATH "$ORIGIN")
+set(CMAKE_INSTALL_RPATH "$ORIGIN")
+
+file(GLOB_RECURSE DETECTOR_SOURCES "detector_dnn/src/*.cpp")
+add_library(detector_dnn SHARED ${DETECTOR_SOURCES})
+target_include_directories(detector_dnn PRIVATE detector_dnn detector_dnn/include)
+target_compile_definitions(detector_dnn PRIVATE model_forward=detector_forward)
+target_compile_options(detector_dnn PRIVATE -O3 -ffast-math -march=native)
+target_link_options(detector_dnn PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/detector.map")
+
+file(GLOB_RECURSE CLASSIFIER_SOURCES "classifier_dnn/src/*.cpp")
+add_library(classifier_dnn SHARED ${CLASSIFIER_SOURCES})
+target_include_directories(classifier_dnn PRIVATE classifier_dnn classifier_dnn/include)
+target_compile_definitions(classifier_dnn PRIVATE model_forward=classifier_forward)
+target_compile_options(classifier_dnn PRIVATE -O3 -ffast-math -march=native)
+target_link_options(classifier_dnn PRIVATE "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/classifier.map")
+
+add_executable(wildlife_pipeline main.cpp)
+target_compile_options(wildlife_pipeline PRIVATE -O3 -ffast-math -march=native)
+target_link_libraries(wildlife_pipeline PRIVATE detector_dnn classifier_dnn)

@@ -1,0 +1,6 @@
+{
+  global:
+    detector_forward;
+  local:
+    *;
+};

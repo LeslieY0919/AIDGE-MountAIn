@@ -1,0 +1,55 @@
+#ifndef _3_PADCONV_1_LAYER_H
+#define _3_PADCONV_1_LAYER_H
+
+#include "utils/cpp/rescaling_utils.hpp"
+#include "utils/cpp/typedefs.hpp"
+
+
+
+// INPUT CONF
+#define _2_MUL_0_OUTPUT_0_IN_BATCH 1
+#define _2_MUL_0_OUTPUT_0_NB_CHANNELS 16
+#define _2_MUL_0_OUTPUT_0_IN_HEIGHT 320
+#define _2_MUL_0_OUTPUT_0_IN_WIDTH 320
+
+// OUTPUT CONF
+#define _3_PADCONV_1_OUTPUT_0_NB_OUTPUTS 32
+#define _3_PADCONV_1_OUTPUT_0_OUT_HEIGHT 160
+#define _3_PADCONV_1_OUTPUT_0_OUT_WIDTH 160
+#define _3_PADCONV_1_OUTPUT_0_OUT_BATCH 1
+
+// MEMINFO CONF
+
+
+
+
+
+#define _3_PADCONV_1_OUTPUT_0_MEM_SIZE 128
+#define _3_PADCONV_1_OUTPUT_0_MEM_OFFSET 0
+#define _3_PADCONV_1_OUTPUT_0_MEM_STRIDE 128
+#define _3_PADCONV_1_OUTPUT_0_MEM_LENGTH 160
+#define _3_PADCONV_1_OUTPUT_0_MEM_CONT_OFFSET 0
+#define _3_PADCONV_1_OUTPUT_0_MEM_CONT_SIZE 0
+#define _3_PADCONV_1_OUTPUT_0_MEM_WRAP_OFFSET 0
+#define _3_PADCONV_1_OUTPUT_0_MEM_WRAP_SIZE 0
+
+
+#define _3_PADCONV_1_PADDING_Y 1
+#define _3_PADCONV_1_PADDING_X 1
+#define _3_PADCONV_1_STRIDE_Y 2
+#define _3_PADCONV_1_STRIDE_X 2
+#define _3_PADCONV_1_DILATION_Y 1
+#define _3_PADCONV_1_DILATION_X 1
+#define _3_PADCONV_1_KERNEL_HEIGHT 3
+#define _3_PADCONV_1_KERNEL_WIDTH 3
+#define _3_PADCONV_1_NB_CHANNELS 16
+#define _3_PADCONV_1_NB_OUTPUTS 32
+#define _3_PADCONV_1_ACTIVATION export_cpp::ActivationFunction_T::Linear
+#define _3_PADCONV_1_OUTPUT_0_DEV_FMT export_cpp::DataFormat_T::NHWC
+
+static const export_cpp::NoScaling _3_PADCONV_1_RESCALING = {};
+#define _3_PADCONV_1_WEIGHTS_SIZE 4608
+#define _3_PADCONV_1_BIASES_SIZE 32
+
+
+#endif /* _3_PADCONV_1_LAYER_H */

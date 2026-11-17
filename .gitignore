@@ -1,0 +1,38 @@
+# Environnements et caches Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Datasets (regenerables via build_5species_dataset.py)
+dataset_wildlife/
+dataset_wildlife_backup/
+dataset_wildlife_staging/
+
+# Modeles et archives volumineuses (a partager via GitHub Releases)
+*.onnx
+*.pt
+*.pth
+*.tar.gz
+*.zip
+
+# Dossiers de compilation CMake et binaires
+**/build/
+**/build_*/
+*.o
+*.so
+*.a
+*.bin
+wildlife_pipeline
+run_export
+
+# Exports C++ generes automatiquement par Aidge (poids volumineux)
+export_cpp_detector_int8/
+export_cpp_classifier/
+export_cpp_classifier_int8/
+standalone_wildlife_cpp/detector_dnn/
+standalone_wildlife_cpp/classifier_dnn/
+
+# Images de sortie temporaires
+full_cpp_pipeline_result.jpg
