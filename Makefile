@@ -8,7 +8,8 @@ PYTHON ?= python
 .DEFAULT_GOAL := help
 .PHONY: help install detector-weights dataset train-classifier \
         export-detector export-classifier quantize build-cpp \
-        run-reference check test clean-exports clean-artifacts
+        run-reference check test board-list board-check connect \
+        clean-exports clean-artifacts
 
 help:  ## Affiche cette aide
 	@grep -hE '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -45,6 +46,17 @@ quantize:  ## PTQ int8 des deux modèles + export C++ sous exports/*_int8/
 
 build-cpp:  ## Assemble et compile le pipeline C++ sous exports/wildlife_pipeline/
 	$(PYTHON) scripts/pipeline/build_standalone_cpp.py
+
+# --- carte cible ---------------------------------------------------------
+
+board-list:  ## Liste les ports série candidats de la carte Alif
+	$(PYTHON) scripts/board/connect.py --list
+
+board-check:  ## Vérifie que SETOOLS voit bien un E7
+	$(PYTHON) scripts/board/connect.py --setools
+
+connect:  ## Ouvre la console série de la carte (115200 bauds, journalisée)
+	$(PYTHON) scripts/board/connect.py --log
 
 # --- 4. vérification -----------------------------------------------------
 

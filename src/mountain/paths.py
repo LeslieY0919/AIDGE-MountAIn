@@ -118,6 +118,8 @@ CLASS_NAMES = CONFIGS / "classes.json"
 DETECTOR_CONFIG = CONFIGS / "detector.yaml"
 CLASSIFIER_CONFIG = CONFIGS / "classifier.yaml"
 QUANTIZATION_CONFIG = CONFIGS / "quantization.yaml"
+#: Ports série, débits et référence du composant de la carte cible.
+BOARD_CONFIG = CONFIGS / "board.yaml"
 
 
 # ---------------------------------------------------------------- utils

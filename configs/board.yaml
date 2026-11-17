@@ -1,0 +1,35 @@
+# Carte cible — Alif Ensemble E7 AppKit
+#
+# Branchée sur son port **PRG USB** (REQ-029). Ce port expose généralement
+# deux interfaces série : celle du Secure Enclave et la console applicative.
+# Les confondre est le piège n° 6 de CLAUDE.md.
+
+# Référence attendue du composant. `connect.py --setools` vérifie que SETOOLS
+# voit bien celle-ci, et pas un autre membre de la famille Ensemble.
+part_number: AE722F80F55D5
+
+serial:
+  # Console applicative : c'est là que sortent les temps d'inférence (REQ-023).
+  # [POSÉ] REQ-113 — valeur à confirmer sur la carte, voir CLAUDE.md §6.
+  console_baud: 115200
+
+  # UART du Secure Enclave, celle que SETOOLS utilise pour programmer la MRAM.
+  # [SOURCÉ] Ce n'est PAS la console applicative : s'y connecter pour lire les
+  # traces de l'application ne donne rien, et parler dessus pendant un flash
+  # peut le faire échouer.
+  se_baud: 55000
+
+  # Nom de périphérique du Secure Enclave, tel que `tools-config -c` l'attend.
+  # Sur Linux il vient d'une règle udev fournie par SETOOLS ; sur macOS le
+  # port apparaît directement sous /dev/cu.usbmodem*.
+  se_device: /dev/alif-se
+
+  # Motifs de recherche des ports, par plateforme. Le premier qui correspond
+  # gagne ; `--port` passe outre.
+  port_globs:
+    darwin: ["/dev/cu.usbmodem*", "/dev/tty.usbmodem*"]
+    linux: ["/dev/alif-se", "/dev/ttyACM*", "/dev/ttyUSB*"]
+
+  # Garde-fou : refuser d'ouvrir la console à un débit qui n'est ni l'un ni
+  # l'autre, sauf --force. Évite un `--baud 9600` qui ne sort que du binaire.
+  allowed_bauds: [115200, 55000]

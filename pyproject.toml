@@ -33,6 +33,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest"]
+# pyserial n'est utile que pour parler à la carte (scripts/board/). Hors de
+# dependencies pour que la chaîne d'entraînement et d'export s'installe sans.
+board = ["pyserial"]
 
 # Layout src/ : le paquet n'est importable qu'une fois installé
 # (`pip install -e .`), ce qui évite les imports accidentels depuis le cwd.

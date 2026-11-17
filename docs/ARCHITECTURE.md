@@ -40,7 +40,7 @@ orchestre.
 
 ### `configs/` — les valeurs
 
-Trois YAML commentés plus la liste des classes. Toute valeur qui pilote le
+Quatre YAML commentés plus la liste des classes. Toute valeur qui pilote le
 comportement de la chaîne vit ici : résolutions d'entrée, seuils de
 confiance et d'IoU, nombre maximal de détections, normalisation, hyper-
 paramètres d'entraînement, options de PTQ, budgets mémoire de la cible.
@@ -63,6 +63,7 @@ répertoire courant.
 | `preprocess.py` | pré-traitement d'image — la seule définition de `MEAN`/`STD` et du passage en NCHW |
 | `aidge/graph.py` | préparation d'un graphe AIDGE depuis un ONNX : marquage des Producer, pliage, propagation de dimensions, promotion des scalaires 0-D, fusion BatchNorm |
 | `aidge/export.py` | appel de `aidge_export_cpp` en absorbant les changements d'API entre versions |
+| `board.py` | découverte des ports série de la carte, débits, référence du composant |
 
 Le sous-paquet `aidge/` isole volontairement tout ce qui touche à l'API
 d'AIDGE. Cette API a bougé entre 0.9 et 0.10 (signature d'export à mots-clés
@@ -81,7 +82,17 @@ scripts/detector/      récupération des poids, fine-tuning, export C++
 scripts/classifier/    construction du dataset, entraînement, export C++
 scripts/quantize/      PTQ int8 des deux modèles
 scripts/pipeline/      assemblage du C++ autonome, référence Python
+scripts/board/         console série de la carte cible
 ```
+
+`scripts/board/` est le premier morceau qui touche au matériel. Sa logique
+réutilisable — découverte des ports, débits, référence du composant — est dans
+`mountain.board`, pour qu'un futur script de flash MRAM n'ait pas à la
+redécouvrir. Sa seule subtilité tient à ce que le port PRG USB expose **deux**
+UART : la console applicative à 115 200 bauds [POSÉ] et celle du Secure
+Enclave à 55 000. Les confondre ne lève aucune erreur — d'où le garde-fou
+`allowed_bauds` de `configs/board.yaml` et le refus de deviner entre deux
+ports indiscernables.
 
 ### `cpp/` — la cible
 

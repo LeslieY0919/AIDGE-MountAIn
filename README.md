@@ -70,12 +70,51 @@ Ce qui est versionné sous `cpp/wildlife_pipeline/` n'est qu'un **instantané de
 référence** de cette sortie, pour pouvoir la relire et en suivre les
 changements — voir le [README du dossier](cpp/wildlife_pipeline/README.md).
 
+## Se connecter à la carte
+
+```bash
+pip install -e ".[board]"            # ajoute pyserial
+make board-list                      # quels ports série sont visibles ?
+make connect                         # console applicative, journalisée dans artifacts/
+```
+
+Le port **PRG USB** de l'AppKit expose **deux UART**, et les confondre est le
+piège le plus coûteux de la chaîne :
+
+| | Débit | Rôle |
+|---|---|---|
+| console applicative | 115 200 **[POSÉ]** | les temps d'inférence (REQ-023) — défaut du script |
+| UART Secure Enclave | 55 000 | SETOOLS, programmation de la MRAM (`--se`) |
+
+Se tromper ne lève aucune erreur : on obtient du binaire illisible, ou un flash
+qui échoue parce qu'on parlait sur le lien pendant la programmation. Les
+115 200 bauds sont une **hypothèse** (REQ-113), à confirmer sur la carte et à
+corriger dans `configs/board.yaml`.
+
+Quand deux ports indiscernables apparaissent, le script ne devine pas — les
+deux interfaces CDC d'un même composite USB ont le même genre de nom. Il
+demande `--port`.
+
+```bash
+make board-check                                     # SETOOLS voit-il un E7 ?
+python scripts/board/connect.py --port /dev/cu.usbmodem103
+python scripts/board/connect.py --se --read-only     # écouter le Secure Enclave
+```
+
+`make board-check` suppose `$SETOOLS` défini et déjà configuré depuis la carte :
+
+```bash
+export SETOOLS=/chemin/vers/app-release-exec-linux
+(cd $SETOOLS && ./tools-config -a -b 55000 -c /dev/alif-se)
+```
+
 ## Carte du dépôt
 
 ```
 configs/        toute la configuration — seuils, résolutions, hyperparamètres
 src/mountain/   le socle commun, importable : chemins, config, pré-traitement, AIDGE
 scripts/        les points d'entrée exécutables, groupés par étape de la chaîne
+                (detector, classifier, quantize, pipeline, board)
 cpp/            sources C++ : harnais du détecteur, instantané du pipeline, tiers
 tests/          contrôles de parité entre la référence Python et le C++
 tools/          audits et diagnostics ponctuels, hors chaîne nominale
