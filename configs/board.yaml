@@ -28,6 +28,12 @@ serial:
   # peut le faire échouer.
   se_baud: 55000
 
+  # [MESURÉ 17/11/2026] Écrire sur le port J-Link perturbe la réception :
+  # le flux se bloque ~2,2 s, puis se déverse d'un coup, préfixé de 4 octets
+  # parasites (04 FF FA 03). Rien n'indique que la carte traite ce qu'on
+  # envoie. Tant que ce n'est pas élucidé, préférer `--read-only` pour lire
+  # des traces : la console bidirectionnelle n'est pas démontrée.
+  #
   # Nom de périphérique du Secure Enclave, tel que `tools-config -c` l'attend.
   # Sur Linux il vient d'une règle udev fournie par SETOOLS ; sur macOS le
   # port apparaît directement sous /dev/cu.usbmodem*.
