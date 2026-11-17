@@ -107,7 +107,7 @@ print(f" -> Export C++ Classifieur généré dans ./export_cpp_classifier : {os.
 
 # --- 2. Quantification INT8 + Validation détection + Export C++ de MDV6 ---
 print("\n2/2 - Quantification INT8 et export C++ de MDV6-yolov10-c...")
-orig_img = Image.open("test_wildlife_1mp.jpg").convert("RGB")
+orig_img = Image.open("samples/test_wildlife_1mp.jpg").convert("RGB")
 W, H = orig_img.size
 
 calib_det = []

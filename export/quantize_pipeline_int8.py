@@ -414,7 +414,7 @@ static bool load_and_preprocess(const std::string& path, std::vector<float>& out
 
 int main(int argc, char** argv)
 {{
-    const std::string input_path = (argc > 1) ? argv[1] : "../../test_wildlife_1mp.jpg";
+    const std::string input_path = (argc > 1) ? argv[1] : "../../samples/test_wildlife_1mp.jpg";
     const float conf_thresh = (argc > 2) ? std::strtof(argv[2], nullptr) : 0.25f;
     const float iou_thresh = 0.70f;
     const char* LABELS[3] = {{"animal", "person", "vehicle"}};
@@ -549,7 +549,7 @@ def main():
     write_and_build_classifier("export_cpp_classifier_int8", cls_out_scales[0])
 
     print("\n=== 2/2 : EXPORT & COMPILATION INT8 DU DETECTEUR (640x640) ===")
-    orig_img = Image.open("test_wildlife_1mp.jpg").convert("RGB")
+    orig_img = Image.open("samples/test_wildlife_1mp.jpg").convert("RGB")
     W, H = orig_img.size
 
     def load_det_pil(im):

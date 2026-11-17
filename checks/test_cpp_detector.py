@@ -112,7 +112,7 @@ def decode_yolov10(final_out: np.ndarray, meta, orig_size):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage : python test_cpp_detector.py <image.jpg>")
+        print("Usage : python checks/test_cpp_detector.py <image.jpg>")
         sys.exit(1)
 
     img_path = Path(sys.argv[1])

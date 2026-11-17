@@ -4,7 +4,7 @@ import aidge_core
 import aidge_backend_cpu
 import aidge_onnx
 
-orig_img = Image.open("test_wildlife_1mp.jpg").convert("RGB")
+orig_img = Image.open("samples/test_wildlife_1mp.jpg").convert("RGB")
 W, H = orig_img.size
 
 graph = aidge_onnx.load_onnx("MDV6-yolov10-c.onnx")

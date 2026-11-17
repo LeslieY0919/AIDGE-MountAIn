@@ -29,7 +29,7 @@ with open("class_names.json", "r") as f:
 _, det_sched, det_out = load_aidge_model("MDV6-yolov10-c.onnx", [1, 3, 320, 320])
 _, cls_sched, cls_out = load_aidge_model("species_classifier.onnx", [1, 3, 128, 128])
 
-orig_img = Image.open("test_wildlife_1mp.jpg").convert("RGB")
+orig_img = Image.open("samples/test_wildlife_1mp.jpg").convert("RGB")
 W, H = orig_img.size
 
 # 2. Étage 1 : Détection MDV6 (passe globale + 4 tuiles 1 MP)

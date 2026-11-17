@@ -82,7 +82,7 @@ def decode_top_box(boxes_arr, scores_arr, orig_w, orig_h):
 
 subprocess.run(["cmake", "--build", str(BUILD_DIR), "-j"], check=True)
 
-orig_img = Image.open("test_wildlife_1mp.jpg").convert("RGB")
+orig_img = Image.open("samples/test_wildlife_1mp.jpg").convert("RGB")
 W, H = orig_img.size
 arr = np.asarray(orig_img.resize((640, 640), Image.Resampling.BILINEAR), dtype=np.float32) / 255.0
 in_nchw = np.ascontiguousarray(np.transpose(arr, (2, 0, 1))[None, ...], dtype=np.float32)

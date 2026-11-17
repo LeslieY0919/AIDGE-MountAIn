@@ -224,7 +224,7 @@ int main(int argc, char** argv)
 {
     using Clock = std::chrono::steady_clock;
 
-    const std::string image_path = (argc > 1) ? argv[1] : "../test_wildlife_1mp.jpg";
+    const std::string image_path = (argc > 1) ? argv[1] : "../samples/test_wildlife_1mp.jpg";
     const float conf_thresh = (argc > 2) ? std::strtof(argv[2], nullptr) : 0.25f;
     const int n_iters = (argc > 3) ? std::max(1, std::atoi(argv[3])) : 10;
     const float iou_thresh = 0.70f;

@@ -38,7 +38,7 @@ def decode_top_box(boxes_arr, scores_arr, orig_w, orig_h):
 
 
 def main():
-    img_path = Path("test_wildlife_1mp.jpg")
+    img_path = Path("samples/test_wildlife_1mp.jpg")
     orig_img = Image.open(img_path).convert("RGB")
     W, H = orig_img.size
 

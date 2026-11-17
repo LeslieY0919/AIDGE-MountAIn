@@ -59,7 +59,7 @@ def run_cpp_classifier(tensor_4d: np.ndarray) -> np.ndarray:
 
 
 def main():
-    img_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("test_wildlife_1mp.jpg")
+    img_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("samples/test_wildlife_1mp.jpg")
     if not img_path.exists():
         print(f"Erreur : image introuvable ({img_path})")
         sys.exit(1)
