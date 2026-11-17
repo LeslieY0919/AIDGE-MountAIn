@@ -39,7 +39,8 @@ avant le **2026-12-31**, soutenance le **2027-01-14**
 - Si la carte n'est pas détectée, vérifier trois points : câble branché sur PRG USB, câble de données (pas
   seulement de charge), interrupteur J-Link EN-DIS sur EN.
 - Sous macOS, cette carte fait apparaître **un seul** port `/dev/cu.usbmodem*`. Avec les cavaliers J15 par défaut,
-  c'est l'UART du Secure Enclave (55 000 bauds pour la revision B4, d'après `utils/featuresDB.db` de SETOOLS). Pour
+  c'est l'UART du Secure Enclave : SETOOLS y dialogue à 55 000 bauds pour la revision B4
+  (`utils/featuresDB.db`), et `connect.py --scan` y mesure une fenêtre de 55 000 à 60 000 bauds. Pour
   lire la console de l'application (UART2, 115 200 bauds dans le kit d'Alif), déplacer les cavaliers J15 de SEUART
   à UART2, puis les remettre sur SEUART avant de flasher.
 - Noms de cible J-Link : `AE722F80F55D5_HP`, `AE722F80F55D5_HE`, `AE722F80F55D5_A32_0`, `AE722F80F55D5_A32_1`.
@@ -148,7 +149,9 @@ Pour régénérer (résultats et CSV par couche dans `artifacts/u55_profile/`) :
 ## Aidge → Ethos-U55
 
 - `scripts/npu/export_classifier.py` : ONNX → PTQ INT8 d'Aidge → TOSA (`aidge_tosa`) → Vela →
-  `exports/npu/<modèle>/output/model_vela.tflite`. Vérifié sur un petit réseau de test ; résultats et pièges dans
+  `exports/npu/<modèle>/output/model_vela.tflite`. Un MobileNetV2-1.0 en 224 passe entièrement sur le NPU, mais
+  avec un Transpose de chaque côté des convolutions : 77 ms et 9,2 Mio de SRAM d'après Vela, contre 10,7 ms et
+  1,4 Mio par TFLite. Résultats et pièges dans
   [notes/2026-11-17-aidge-vers-npu.md](notes/2026-11-17-aidge-vers-npu.md).
 - L'image `docker/aidge/` installe l'`aidge_tosa` **officiel** à un commit figé. En int8, il gère Conv, DWConv,
   pooling (sans padding), FC, ReLU, Add, Reshape et Transpose ; il lui manque Sigmoid/Mul, Concat, Resize,

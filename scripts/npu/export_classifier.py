@@ -3,8 +3,10 @@
 # Le résultat, <out>/output/model_vela.tflite, se passe ensuite à scripts/board/build_img_class.sh (MODEL_PATH) pour
 # être exécuté sur la carte par le kit d'évaluation ML d'Alif.
 #
-# Le modèle exporté prend une image entrelacée (NHWC) en int8 avec q = pixel - 128 : c'est la conversion que fait
-# déjà le kit d'Alif, il n'y a donc aucune normalisation à faire sur la carte.
+# Le modèle exporté prend une image int8 avec q = pixel - 128 : c'est la conversion que fait déjà le kit d'Alif,
+# il n'y a donc aucune normalisation à faire sur la carte. Par défaut l'entrée est en NCHW, la seule disposition
+# qui passe sur un MobileNetV2 ; voir notes/2026-11-17-aidge-vers-npu.md pour le coût des Transpose et l'échec
+# de l'export NHWC.
 #
 # Demande aidge_tosa, aidge_export_arm_ethos et Vela : s'exécute dans l'environnement décrit par
 # docker/aidge/Dockerfile. Sur une machine sans wheel Aidge (macOS), passer par scripts/npu/aidge_docker.sh :
@@ -142,7 +144,9 @@ def main():
     ap.add_argument("--input-norm", choices=("imagenet", "pm1"), default="imagenet",
                     help="normalisation avec laquelle le modèle a été entraîné : moyenne/écart-type ImageNet (repliée "
                          "dans la première convolution) ou (pixel - 127.5) / 127.5")
-    ap.add_argument("--input-format", choices=("nhwc", "nchw"), default="nhwc", help="disposition de l'entrée du modèle exporté")
+    ap.add_argument("--input-format", choices=("nchw", "nhwc"), default="nchw",
+                    help="disposition de l'entrée du modèle exporté ; nhwc évite les Transpose mais échoue dès que "
+                         "le réseau contient des convolutions en profondeur avec remplissage")
     ap.add_argument("--out", type=Path, default=None, help="par défaut exports/npu/<nom du modèle>")
     ap.add_argument("--accelerator", default="ethos-u55-256")
     ap.add_argument("--system-config", default="RTSS_HP_SRAM_MRAM")
@@ -193,9 +197,10 @@ def main():
     agreement = sum(r == q for r, q in zip(reference, quantized))
 
     # 4. Export TOSA puis compilation Vela. Le tenseur d'entrée ne sert qu'à décrire la signature (dimensions, type,
-    # format). En NHWC, aidge_tosa convertit tout le graphe en NHWC : l'entrée du modèle est alors une image entrelacée
-    # (ce qu'attend le kit d'Alif). En NCHW, le graphe reste en NCHW et chaque convolution est encadrée de deux
-    # Transpose (environ 4 fois plus lent d'après Vela sur un petit réseau).
+    # format). En NCHW, le graphe reste en NCHW et chaque convolution est encadrée de deux Transpose (environ 4 fois
+    # plus lent d'après Vela sur un petit réseau). En NHWC, aidge_tosa convertit tout le graphe et l'entrée du modèle
+    # devient une image entrelacée (ce qu'attend le kit d'Alif), mais le remplissage des convolutions en profondeur
+    # est alors appliqué sur les mauvais axes et Vela refuse le fichier (constaté sur MobileNetV2).
     if args.input_format == "nhwc":
         example = aidge_core.Tensor(np.zeros([1, args.size, args.size, 3], dtype=np.int8))
         example.set_data_format(aidge_core.dformat.nhwc)
