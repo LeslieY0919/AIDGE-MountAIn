@@ -19,7 +19,8 @@ Usage :
 Ce qu'on tape est envoyé **ligne par ligne** (entrée pour valider).
 Ctrl-C pour quitter.
 
-Prérequis : ``pip install -e ".[board]"`` pour pyserial.
+Prérequis : ``pip install -e ".[board]"``. C'est volontairement léger — ni
+torch ni AIDGE ne sont nécessaires pour lire un port série.
 """
 
 from __future__ import annotations
@@ -33,7 +34,21 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from mountain import board, paths
+try:
+    from mountain import board, paths
+except ModuleNotFoundError as exc:  # pragma: no cover
+    if exc.name != "mountain":
+        raise
+    # Ce script est souvent le premier lancé sur une machine neuve, branchée à
+    # la carte. Un ModuleNotFoundError nu n'indique pas quoi faire.
+    sys.exit(
+        "Le paquet `mountain` n'est pas installé.\n"
+        "\n"
+        "  cd <racine du dépôt>\n"
+        '  pip install -e ".[board]"      # minimum pour la console série\n'
+        "\n"
+        "Ou `make install` pour la chaîne complète (entraînement, export AIDGE)."
+    )
 
 
 def cmd_list() -> int:

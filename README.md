@@ -20,11 +20,19 @@ d'architecture, pièges connus de la chaîne outil) est dans **[CLAUDE.md](CLAUD
 
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate   # Python 3.11 ou 3.12, pas 3.13
-make install
+make install                                            # chaîne complète
 ```
 
-`make install` installe le paquet `mountain` en mode éditable, puis
-`aidge-quantization` avec `--no-deps`. Ce `--no-deps` est volontaire : les
+`make install` installe le paquet `mountain` en mode éditable. **Cette étape
+n'est pas optionnelle** : les scripts l'importent, et sans elle chacun échoue
+sur `ModuleNotFoundError: No module named 'mountain'`. C'est le prix du layout
+`src/`, et c'est voulu — il n'y a plus d'import accidentel depuis le
+répertoire courant.
+
+Pour ne parler qu'à la carte, `make install-board` suffit et reste léger.
+
+`make install` ajoute aussi `aidge-quantization` avec `--no-deps`. Ce
+`--no-deps` est volontaire : les
 métadonnées du paquet déclarent `aidge-backend-cuda` comme obligatoire alors
 que la chaîne CPU utilisée ici n'en a pas besoin. `pip check` signalera donc
 une dépendance absente — sans conséquence. Pour le backend CUDA, installer
@@ -73,10 +81,14 @@ changements — voir le [README du dossier](cpp/wildlife_pipeline/README.md).
 ## Se connecter à la carte
 
 ```bash
-pip install -e ".[board]"            # ajoute pyserial
+make install-board                   # léger : pyserial, sans torch ni AIDGE
 make board-list                      # quels ports série sont visibles ?
 make connect                         # console applicative, journalisée dans artifacts/
 ```
+
+`make install-board` installe cinq paquets. Une machine qui ne sert qu'à
+parler à la carte n'a aucune raison d'installer torch — c'est `make install`
+qui ajoute la chaîne d'entraînement et d'export.
 
 Le port **PRG USB** de l'AppKit expose **deux UART**, et les confondre est le
 piège le plus coûteux de la chaîne :
@@ -179,3 +191,36 @@ d'ancres, et `alif_yolo_fastest` procède exactement ainsi.
 
 Les deux écarts sont sans conséquence pour la validation sur hôte Linux, et
 bloquants pour l'embarqué. Mesurer avant de décider (cf. CLAUDE.md §10).
+
+## Dépannage
+
+**`ModuleNotFoundError: No module named 'mountain'`**
+
+Le paquet n'est pas installé dans l'environnement courant. C'est l'erreur la
+plus probable sur une machine neuve :
+
+```bash
+cd <racine du dépôt>
+make install          # chaîne complète
+make install-board    # ou le minimum, pour la carte uniquement
+```
+
+Si l'erreur persiste, c'est que `pip` et `python` ne pointent pas vers le même
+environnement. Vérifier avec `python -c "import sys; print(sys.prefix)"` et
+`pip -V`.
+
+**Aucun port série trouvé, ou plusieurs ports candidats**
+
+`make board-list` écarte déjà les pseudo-ports permanents de macOS
+(Bluetooth, console de debug, debug Wi-Fi) et les nœuds `/dev/tty.*`. Sur
+macOS, n'utiliser que `/dev/cu.*` : `/dev/tty.*` désigne le même port côté
+« appel entrant » et son ouverture bloque indéfiniment en attente de porteuse
+(DCD), que la carte n'assure pas. La liste des exclusions est dans
+`configs/board.yaml`.
+
+S'il reste plusieurs candidats, le script ne devine pas et demande `--port`.
+
+**`cmake` ne trouve pas `detector_dnn/` ou `classifier_dnn/`**
+
+Ces sources sont générées : lancer `make quantize` puis `make build-cpp`. Le
+pipeline C++ ne se compile pas depuis le dépôt seul.

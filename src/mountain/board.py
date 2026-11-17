@@ -18,6 +18,7 @@ Les valeurs viennent de ``configs/board.yaml``.
 
 from __future__ import annotations
 
+import fnmatch
 import glob
 import sys
 from dataclasses import dataclass
@@ -71,28 +72,47 @@ class Port:
         return f"{self.device}{role}{desc}"
 
 
+def _platform() -> str:
+    return "darwin" if sys.platform == "darwin" else "linux"
+
+
+def _is_excluded(device: str) -> bool:
+    """Vrai si le port correspond à un motif d'exclusion de la plateforme.
+
+    macOS expose en permanence des pseudo-ports (Bluetooth, console de debug)
+    qui ne seront jamais la carte, et un nœud ``/dev/tty.*`` par port dont
+    l'ouverture bloque en attente de DCD. Les écarter est ce qui permet à
+    ``pick_default()`` de trancher au lieu de déclarer le choix ambigu.
+    """
+    patterns = config()["serial"].get("exclude_globs", {}).get(_platform(), [])
+    return any(fnmatch.fnmatch(device, pattern) for pattern in patterns)
+
+
 def list_candidates() -> list[Port]:
     """Ports série pouvant être la carte, dans l'ordre où les proposer.
 
     Deux sources, fusionnées : l'énumération USB de pyserial, qui donne une
     description lisible, et les motifs de ``configs/board.yaml``, qui rattrapent
     les nœuds créés par une règle udev (``/dev/alif-se``) que pyserial
-    n'énumère pas toujours.
+    n'énumère pas toujours. Les deux passent par le filtre d'exclusion.
     """
     se_device = config()["serial"]["se_device"]
     found: dict[str, Port] = {}
 
     if _list_ports is not None:
         for p in _list_ports.comports():
+            if _is_excluded(p.device):
+                continue
             found[p.device] = Port(
                 device=p.device,
                 description=(p.description or "").strip(),
                 is_se=(p.device == se_device),
             )
 
-    platform = "darwin" if sys.platform == "darwin" else "linux"
-    for pattern in config()["serial"]["port_globs"].get(platform, []):
+    for pattern in config()["serial"]["port_globs"].get(_platform(), []):
         for device in sorted(glob.glob(pattern)):
+            if _is_excluded(device):
+                continue
             found.setdefault(device, Port(device=device, is_se=(device == se_device)))
 
     # Le Secure Enclave en tête : c'est le seul qu'on sait identifier avec

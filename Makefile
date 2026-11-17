@@ -8,7 +8,7 @@ PYTHON ?= python
 .DEFAULT_GOAL := help
 .PHONY: help install detector-weights dataset train-classifier \
         export-detector export-classifier quantize build-cpp \
-        run-reference check test board-list board-check connect \
+        install-board run-reference check test board-list board-check connect \
         clean-exports clean-artifacts
 
 help:  ## Affiche cette aide
@@ -16,9 +16,12 @@ help:  ## Affiche cette aide
 	  | sed -e 's/:.*## /\t/' \
 	  | awk -F'\t' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
-install:  ## Installe le paquet mountain et ses dépendances en mode éditable
-	$(PYTHON) -m pip install -e ".[dev]"
+install:  ## Installe la chaîne complète (entraînement, export, quantification)
+	$(PYTHON) -m pip install -e ".[ml,dev]"
 	$(PYTHON) -m pip install --no-deps aidge-quantization
+
+install-board:  ## Installe le minimum pour parler à la carte (sans torch ni AIDGE)
+	$(PYTHON) -m pip install -e ".[board]"
 
 # --- 1. préparation des modèles et des données ---------------------------
 

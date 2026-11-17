@@ -24,11 +24,26 @@ serial:
   # port apparaît directement sous /dev/cu.usbmodem*.
   se_device: /dev/alif-se
 
-  # Motifs de recherche des ports, par plateforme. Le premier qui correspond
-  # gagne ; `--port` passe outre.
+  # Motifs de recherche des ports, par plateforme. `--port` passe outre.
+  #
+  # macOS : uniquement /dev/cu.* et jamais /dev/tty.*. Les deux nœuds
+  # désignent le même port, mais /dev/tty.* est le côté « appel entrant » :
+  # l'ouvrir bloque jusqu'à détection de porteuse (DCD), que la carte
+  # n'assure pas. On y attend indéfiniment, sans message d'erreur.
   port_globs:
-    darwin: ["/dev/cu.usbmodem*", "/dev/tty.usbmodem*"]
+    darwin: ["/dev/cu.usbmodem*", "/dev/cu.usbserial*"]
     linux: ["/dev/alif-se", "/dev/ttyACM*", "/dev/ttyUSB*"]
+
+  # Ports à écarter : ce ne sera jamais la carte. macOS expose en permanence
+  # des pseudo-ports (Bluetooth, console de debug, debug Wi-Fi) qui rendaient
+  # le choix du port « ambigu » alors qu'un seul candidat était réel.
+  exclude_globs:
+    darwin:
+      - "/dev/*Bluetooth*"
+      - "/dev/*debug-console*"
+      - "/dev/*wlan-debug*"
+      - "/dev/tty.*"
+    linux: []
 
   # Garde-fou : refuser d'ouvrir la console à un débit qui n'est ni l'un ni
   # l'autre, sauf --force. Évite un `--baud 9600` qui ne sort que du binaire.
