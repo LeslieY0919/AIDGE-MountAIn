@@ -23,13 +23,25 @@ dependencies = [
 # La chaîne complète : entraînement, export AIDGE, quantification.
 # C'est ce qu'installe `make install`.
 #
-# aidge-quantization n'y figure pas volontairement : ses métadonnées déclarent
-# aidge-backend-cuda comme obligatoire alors que la chaîne CPU n'en a pas
-# besoin. Il s'installe à part avec --no-deps (voir le README).
+# PLATEFORME — AIDGE ne publie des roues que pour **Linux x86_64** et
+# **Windows amd64**. Aucune roue macOS, et aucun sdist : la chaîne
+# d'entraînement et d'export ne s'installe donc PAS sur un Mac, quelle que
+# soit la version de Python. Un Mac peut en revanche parler à la carte,
+# avec l'extra `board`. Vérifié sur PyPI le 17/11/2026.
+#
+# VERSIONS — les paquets aidge sont épinglés à la plage documentée comme
+# connue bonne (CLAUDE.md §3, [SOURCÉ]). Sans borne haute, pip installe
+# 0.11.0, dont l'API diffère et que le fork aidge-tosa du défi ne couvre pas
+# forcément. Relever la borne est une décision à prendre explicitement, après
+# avoir repassé `make check`.
+#
+# aidge-quantization ne figure pas ici volontairement : ses métadonnées
+# déclarent aidge-backend-cuda comme obligatoire alors que la chaîne CPU n'en
+# a pas besoin. Il s'installe à part avec --no-deps (voir le README).
 ml = [
-    "aidge-core",
-    "aidge-backend-cpu",
-    "aidge-onnx",
+    "aidge-core>=0.10.1,<0.11",
+    "aidge-backend-cpu>=0.10.1,<0.11",
+    "aidge-onnx>=0.10.1,<0.11",
     "aidge-export-cpp",
     "huggingface-hub",
     "onnx",

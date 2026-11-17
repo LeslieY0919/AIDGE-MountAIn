@@ -16,6 +16,35 @@ d'architecture, pièges connus de la chaîne outil) est dans **[CLAUDE.md](CLAUD
 
 ---
 
+## Prérequis — attention à la plateforme
+
+| | Chaîne d'entraînement et d'export | Console de la carte |
+|---|---|---|
+| **Linux x86_64** | oui | oui |
+| **Windows amd64** | oui | oui |
+| **macOS** (Intel ou Apple Silicon) | **non** | oui |
+
+AIDGE ne publie des roues que pour **Linux x86_64** et **Windows amd64**. Il
+n'existe ni roue macOS ni archive source de repli : sur un Mac, `pip` répond
+`Could not find a version that satisfies the requirement aidge-core`, et
+aucune version de Python n'y change quoi que ce soit. `make install` le
+détecte et le dit avant de lancer une résolution de plusieurs minutes.
+
+Un Mac reste parfaitement utilisable pour **parler à la carte**
+(`make install-board`) et pour relire le code. L'entraînement, l'export et la
+quantification demandent une machine Linux x86_64 ou Windows amd64 — ce qui
+tombe bien, puisque `configs/classifier.yaml` est dimensionné pour un GPU de
+16 Go.
+
+Python **3.11 ou 3.12**, pas 3.13 (CLAUDE.md §3).
+
+> Les paquets `aidge-*` sont épinglés à `>=0.10.1,<0.11`, la plage documentée
+> comme connue bonne. Sans borne haute, `pip` installerait 0.11.0, dont l'API
+> diffère. À noter : AIDGE 0.11 publie désormais des roues cp313 et déclare
+> `requires-python >=3.10`, ce qui suggère que la contrainte 3.11/3.12 vient
+> d'autres composants de la chaîne (`aidge_tosa`, `tosa-tools`, `vela`). À
+> vérifier avant de relever les bornes.
+
 ## Démarrage
 
 ```bash
@@ -264,6 +293,12 @@ Les deux écarts sont sans conséquence pour la validation sur hôte Linux, et
 bloquants pour l'embarqué. Mesurer avant de décider (cf. CLAUDE.md §10).
 
 ## Dépannage
+
+**`Could not find a version that satisfies the requirement aidge-core`**
+
+Ce n'est pas un problème de version mais de **plateforme** : AIDGE ne publie
+aucune roue macOS. Voir la section Prérequis. Sur un Mac, s'en tenir à
+`make install-board` et faire tourner la chaîne sur une machine Linux x86_64.
 
 **`Package 'mountain' requires a different Python: 3.9.x not in '<3.13,>=3.11'`**
 
