@@ -110,13 +110,27 @@ piège le plus coûteux de la chaîne :
 
 | | Débit | Rôle |
 |---|---|---|
-| console applicative | 115 200 **[POSÉ]** | les temps d'inférence (REQ-023) — défaut du script |
+| console applicative | 57 600 **[MESURÉ]** | les temps d'inférence (REQ-023) — défaut du script |
 | UART Secure Enclave | 55 000 | SETOOLS, programmation de la MRAM (`--se`) |
 
 Se tromper ne lève aucune erreur : on obtient du binaire illisible, ou un flash
-qui échoue parce qu'on parlait sur le lien pendant la programmation. Les
-115 200 bauds sont une **hypothèse** (REQ-113), à confirmer sur la carte et à
-corriger dans `configs/board.yaml`.
+qui échoue parce qu'on parlait sur le lien pendant la programmation. D'où
+`--scan`, qui essaie une série de débits et dit lequel décode :
+
+```bash
+python scripts/board/connect.py --scan
+```
+
+Le piège du balayage est la tolérance de l'UART : chaque caractère se
+resynchronise sur son bit de start, donc plusieurs débits voisins décodent.
+Le vrai débit est au **centre** de la fenêtre, pas à son bord — `--scan`
+encadre des deux côtés pour le situer, et l'annonce.
+
+Les 57 600 bauds de `configs/board.yaml` viennent de cette mesure : fenêtre
+55 000–60 000, centre 57 500. Ils **infirment** l'hypothèse de 115 200
+(REQ-113). Ce que ce port est exactement reste à établir : le flux observé
+est un spinner ANSI, pas une application traçant ses temps d'inférence —
+relancer `--scan` quand le firmware applicatif tournera.
 
 Sur la carte du groupe (AppKit avec J-Link embarquée), macOS ne voit qu'**un
 seul** port : les cavaliers J15 le relient soit à l'UART du Secure Enclave

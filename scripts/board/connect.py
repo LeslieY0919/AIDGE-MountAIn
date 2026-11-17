@@ -3,8 +3,10 @@
 Carte branchée sur son **port PRG USB**. Ce port expose deux UART qu'il ne
 faut pas confondre (piège n° 6 de ``CLAUDE.md``) :
 
-- la **console applicative**, 115 200 bauds [POSÉ, REQ-113], où sortent les
-  temps d'inférence (REQ-023) — c'est le défaut de ce script ;
+- la **console applicative**, où sortent les temps d'inférence (REQ-023) —
+  c'est le défaut de ce script. Son débit est dans ``configs/board.yaml`` ;
+  ``--scan`` sert à le (re)mesurer, parce qu'un mauvais débit ne lève aucune
+  erreur et ne sort que du binaire ;
 - l'**UART du Secure Enclave**, 55 000 bauds [SOURCÉ], que SETOOLS utilise
   pour programmer la MRAM. Accessible avec ``--se``, et à éviter pendant un
   flash.
@@ -14,6 +16,7 @@ Usage :
     python scripts/board/connect.py                 # console applicative
     python scripts/board/connect.py --log           # idem, en journalisant
     python scripts/board/connect.py --se            # UART Secure Enclave
+    python scripts/board/connect.py --scan          # quel débit décode ?
     python scripts/board/connect.py --setools       # SETOOLS voit-il un E7 ?
 
 Ce qu'on tape est envoyé **ligne par ligne** (entrée pour valider).
@@ -101,6 +104,74 @@ def cmd_setools() -> int:
     print(f"ATTENTION : {expected} absent de la configuration.", file=sys.stderr)
     print("La carte connectée n'est peut-être pas l'E7 attendu.", file=sys.stderr)
     return 1
+
+
+def cmd_scan(port: str, seconds: float) -> int:
+    """Essaie plusieurs débits et dit lequel décode proprement.
+
+    Un mauvais débit ne lève aucune erreur : on reçoit du binaire. La seule
+    façon de trancher est d'écouter et de compter les octets lisibles.
+
+    Attention à la tolérance de l'UART : un écart de quelques pourcents décode
+    encore, parce que chaque caractère se resynchronise sur son bit de start.
+    Plusieurs débits voisins peuvent donc « marcher ». Le vrai débit est au
+    **centre** de la fenêtre qui décode, pas à son bord — c'est ce que la
+    dernière ligne du rapport estime.
+    """
+    try:
+        import serial
+    except ImportError:
+        print('pyserial est absent : pip install -e ".[board]"', file=sys.stderr)
+        return 1
+
+    bauds = board.config()["serial"].get("scan_bauds") or [board.console_baud()]
+    print(f"Balayage de {port}, {seconds:g} s par débit.")
+    print()
+    print(f"  {'débit':>7}  {'octets':>6}  {'lisible':>7}  échantillon")
+    print(f"  {'-'*7}  {'-'*6}  {'-'*7}  {'-'*40}")
+
+    results: list[tuple[int, float, int]] = []
+    for baud in bauds:
+        try:
+            with serial.Serial(port, baud, timeout=0.3) as link:
+                link.reset_input_buffer()
+                buf = b""
+                deadline = time.time() + seconds
+                while time.time() < deadline:
+                    buf += link.read(4096)
+        except Exception as exc:
+            print(f"  {baud:>7}  erreur : {exc}")
+            continue
+
+        if not buf:
+            print(f"  {baud:>7}  {0:>6}  {'—':>7}  (rien reçu)")
+            results.append((baud, 0.0, 0))
+            continue
+
+        # ESC et backspace comptent comme lisibles : une console qui s'anime en
+        # émet légitimement.
+        readable = sum(1 for c in buf if 32 <= c < 127 or c in (8, 9, 10, 13, 27))
+        ratio = readable / len(buf)
+        sample = "".join(chr(c) if 32 <= c < 127 else "." for c in buf[:40])
+        print(f"  {baud:>7}  {len(buf):>6}  {ratio*100:>6.1f}%  |{sample}|")
+        results.append((baud, ratio, len(buf)))
+
+    good = [b for b, ratio, n in results if n > 0 and ratio >= 0.95]
+    print()
+    if not good:
+        print("Aucun débit ne décode proprement.")
+        print("La carte émet-elle quelque chose ? Essayer --scan --port <autre port>.")
+        return 1
+
+    print(f"Décodent proprement : {', '.join(str(b) for b in sorted(good))}")
+    if len(good) > 1:
+        centre = (min(good) + max(good)) / 2
+        print(f"Fenêtre {min(good)}–{max(good)} : le vrai débit est proche de "
+              f"{centre:.0f}, pas d'un bord.")
+        print("Resserrer avec --scan autour de cette valeur pour trancher.")
+    print()
+    print(f"Pour fixer le choix : console_baud dans {paths.BOARD_CONFIG.name}.")
+    return 0
 
 
 def resolve_port(requested: str | None) -> str | None:
@@ -221,6 +292,10 @@ def main() -> int:
     )
     parser.add_argument("--list", action="store_true",
                         help="lister les ports candidats et sortir")
+    parser.add_argument("--scan", action="store_true",
+                        help="essayer plusieurs débits et dire lequel décode")
+    parser.add_argument("--scan-seconds", type=float, default=3.0,
+                        help="durée d'écoute par débit pour --scan (défaut : 3)")
     parser.add_argument("--setools", action="store_true",
                         help="vérifier que SETOOLS voit un %s" % board.part_number())
     parser.add_argument("--port", help="port série à ouvrir (sinon auto si non ambigu)")
@@ -240,6 +315,11 @@ def main() -> int:
         return cmd_list()
     if args.setools:
         return cmd_setools()
+    if args.scan:
+        port = resolve_port(args.port)
+        if port is None:
+            return 2
+        return cmd_scan(port, args.scan_seconds)
 
     cfg = board.config()
 
