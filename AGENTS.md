@@ -46,8 +46,8 @@ avant le **2026-12-31**, soutenance le **2027-01-14**
 - Noms de cible J-Link : `AE722F80F55D5_HP`, `AE722F80F55D5_HE`, `AE722F80F55D5_A32_0`, `AE722F80F55D5_A32_1`.
 - Guide de référence : Alif AUGD0020, *AI/ML AppKit w/J-Link On-Board User Guide*.
 - Le SDK du porteur suppose par défaut une caméra ARX3A0 sur l'AppKit (« The AppKit E7 ships with the ARX3A0 ») :
-  pour notre MT9M114, compiler avec `-DALIF_CAMERA_MODULE=MT9M114`, comme CLAUDE.md §3. À confirmer au premier
-  essai caméra.
+  pour notre MT9M114, compiler avec `-DALIF_CAMERA_MODULE=MT9M114`, comme CLAUDE.md §3. Vérifié le 2026-11-18 :
+  avec cette option, l'image de la caméra s'affiche sur l'écran.
 
 Les 8 Mo de SRAM et 4,5 Mo de MRAM de CLAUDE.md correspondent à ce que voit **un** cœur avec les scripts d'édition
 de liens du kit d'Alif, que le SDK reprend à l'identique (`RTSS-HP.ld` : ITCM 256 Kio, DTCM 1 Mio, SRAM0 4 Mio,
@@ -112,7 +112,8 @@ modèles du kit prennent `q = pixel − 128` en entrée, ceux du SDK non : ne pa
 
 ## SDK du porteur (`alif_aidge_sdk`)
 
-Lu dans le code (`eb35a81`) ; son export a été essayé, son firmware n'a été ni compilé ni flashé ici. Détails dans
+Lu dans le code (`eb35a81`). Son exemple MobileNetV2 a été exporté, compilé sous macOS et flashé sur la carte le
+2026-11-18 : marche à suivre dans [docs/GUIDE_CARTE.md](docs/GUIDE_CARTE.md). Détails du code dans
 [notes/2026-11-17-contraintes-carte-et-kit.md](notes/2026-11-17-contraintes-carte-et-kit.md#ce-que-fait-le-sdk-du-porteur).
 
 - **Installation** : celle de CLAUDE.md §3, à une différence près pour le détecteur.
@@ -131,6 +132,8 @@ Lu dans le code (`eb35a81`) ; son export a été essayé, son firmware n'a été
   - la console est sur UART2 à 115 200 bauds, à lire en passant J15 sur UART2.
 - **Flash** : `tools/flash_mram.sh --cpu HP|HE` appelle `app-write-mram -p -b 55000` (opération à faire valider,
   voir la dernière section). L'image HP et l'image HE vont à la même adresse : la seconde remplace la première.
+  Sous macOS, le script marche si l'on donne `SE_PORT` et que ce port figure déjà dans `isp_config_data.cfg` de
+  SETOOLS (environ 75 s) ; détails dans le guide.
 
 ## Mesures Vela sur l'Ethos-U55
 
@@ -183,11 +186,15 @@ d'`aidge_export_ethos`. Résultats, contrôles et pièges dans
 |---|---|---|---|---|---|---|
 | MobileNetV2-1.0 | 224 | 68 / 0 | 13.1 ms | 1.44 MiB | 2.98 MiB | 10.7 ms, 1.44 MiB |
 | YOLOv10n d'origine (SiLU + PSA) | 320 | 344 / 0 | 54.3 ms | 0.79 MiB | 1.62 MiB | 48.2 ms, 5.26 MiB |
+| MobileNetV2-1.0, 398 classes animales (sur la carte) | 224 | 66 / 0 | 12.1 ms | 1.44 MiB | 2.39 MiB | – |
 
 - `scripts/npu/sdk_export_report.py` : export par `alif_aidge_sdk.export.export_model`, puis résumé
   (`result.json` : estimation de Vela, corrélation flottant / int8 par sortie, contrôle TOSA).
 - `scripts/npu/onnx_slices_to_split.py` : à passer sur le détecteur avant l'export. Dans notre ONNX de YOLOv10n,
   les C2f séparent leurs canaux par des Slice, que le fork convertit mal en NHWC ; le Split équivalent passe.
+- `scripts/npu/sdk_mobilenetv2_animaux.py` : le MobileNetV2 de l'exemple du SDK réduit aux 398 classes animales
+  d'ImageNet, sans réentraînement. C'est le modèle qui tourne sur la carte
+  ([docs/GUIDE_CARTE.md](docs/GUIDE_CARTE.md)).
 - Sur YOLOv10n, la quantification abîme surtout les sorties de classes (corrélation 0,56 à 0,86 avec le
   flottant, contre 0,99 pour les boîtes), sur 10 images de calibration seulement.
 - Le fork gère, en plus de l'`aidge_tosa` officiel, Concat, Slice, Split, Resize, MaxPool avec padding, Sigmoid,
@@ -215,8 +222,10 @@ L'image n'a ni les outils du porteur ni onnxruntime. Pour la chaîne du SDK, san
 - les placer en tête du `PYTHONPATH` dans `run`.
 
 Les commandes sont dans [notes/2026-11-17-aidge-vers-npu.md](notes/2026-11-17-aidge-vers-npu.md#reproduire).
-Faute d'onnxruntime, `sdk_export_report.py` calcule les sorties flottantes de référence avec Aidge. Le fork fixe
-`tosa-tools==2026.5.0` ; l'image a la 2026.8.0, sans problème constaté.
+Faute d'onnxruntime, `sdk_export_report.py` et `sdk_mobilenetv2_animaux.py` calculent les sorties flottantes de
+référence avec Aidge. Le fork fixe `tosa-tools==2026.5.0` ; l'image a la 2026.8.0, sans problème constaté. Une fois
+sur quatre exports identiques (2026-11-19), Python s'est arrêté sur `Segmentation fault` pendant la quantification ;
+la même commande, relancée, a abouti.
 
 ## Opérations à faire valider
 

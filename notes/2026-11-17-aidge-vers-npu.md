@@ -6,6 +6,8 @@
   des estimations de Vela. [SOURCÉ] pour ce qui est lu dans le code du SDK `alif_aidge_sdk` (`eb35a81`), du fork
   `aidge-tosa-fork` (`8223ea3`) et du fork d'`aidge_export_ethos` (branche `feat/ethos-be-lowering`, `4cfbc5d`).
   **Rien n'a tourné sur la carte.**
+- **Mise à jour** (2026-11-19) : depuis le 2026-11-18, un MobileNetV2 exporté par cette chaîne tourne sur la carte
+  ([docs/GUIDE_CARTE.md](../docs/GUIDE_CARTE.md)). Les temps mesurés sur la carte restent à relever.
 
 ## En bref
 
@@ -143,7 +145,8 @@ Contrôles :
 - Les vrais modèles : `MDV6-yolov10-c` (Slice ou Split ? temps et SRAM en 320 et au-delà) et le classifieur du
   groupe.
 - La calibration sur des images représentatives, et la précision du graphe int8 (top-1, rappel).
-- L'exécution sur la carte : aucun `.tflite` exporté n'a encore été flashé.
+- L'exécution sur la carte : aucun `.tflite` exporté n'a encore été flashé. Fait le 2026-11-18 pour MobileNetV2
+  (exemple du SDK, puis variante à 398 classes animales) ; reste à relever le temps NPU et les images par seconde.
 - Le défaut des Slice, à signaler au porteur (voir [questions-ouvertes.md](questions-ouvertes.md)).
 
 ## Reproduire

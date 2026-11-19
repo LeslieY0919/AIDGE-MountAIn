@@ -109,6 +109,8 @@ validation (voir [AGENTS.md](../AGENTS.md)).
 - `sdk_export_report.py` appelle l'export du SDK (PTQ d'AIDGE, fork
   `aidge_tosa`, Vela) et en résume le résultat ;
 - `onnx_slices_to_split.py` prépare l'ONNX du détecteur pour ce fork ;
+- `sdk_mobilenetv2_animaux.py` réduit le MobileNetV2 de l'exemple du SDK aux
+  398 classes animales d'ImageNet, pour la démonstration sur la carte ;
 - `export_classifier.py`, antérieur, produit un `.tflite` pour le kit d'Alif
   (convention d'entrée `pixel − 128`). Il prend ses chemins dans
   `mountain.paths` et sa normalisation dans `mountain.preprocess`, comme le
@@ -119,7 +121,8 @@ sont pas dans `make install`. `docker/aidge/Dockerfile` décrit une image avec
 leurs versions officielles ; les dépôts du porteur s'y ajoutent par le
 `PYTHONPATH`. `aidge_docker.sh` sert aux machines sans wheel AIDGE (macOS) :
 il exécute une commande dans cette image sur une machine Linux jointe en SSH.
-Les sorties vont dans `exports/npu/`.
+Les sorties vont dans `exports/npu/`. La suite (sources du modèle, firmware du
+SDK, flash) est décrite dans [GUIDE_CARTE.md](GUIDE_CARTE.md).
 
 ### `cpp/` — la cible
 

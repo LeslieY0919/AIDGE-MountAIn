@@ -12,7 +12,7 @@
 #
 # L'image docker/aidge/ installe l'aidge_tosa officiel : y placer les dépôts du porteur en tête du PYTHONPATH.
 #   F=/work/external/organisateur
-#   scripts/npu/aidge_docker.sh run sh -c "PYTHONPATH=$F/aidge_export_ethos:$F/aidge-tosa-fork:$F/alif_aidge_sdk:/work/src \
+#   scripts/npu/aidge_docker.sh run sh -c "PYTHONPATH=$F/aidge_export_ethos-fork:$F/aidge-tosa-fork:$F/alif_aidge_sdk:/work/src \
 #       python scripts/npu/sdk_export_report.py --onnx models/yolov10n.onnx --size 320 --calib data/samples --verify"
 #
 # Sans onnxruntime (absent de l'image), les sorties flottantes de référence, que le SDK utilise pour ajuster les

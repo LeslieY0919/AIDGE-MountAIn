@@ -223,6 +223,11 @@ ML d'Alif avec le modèle de son choix et prépare le paquet ATOC ; **rien n'est
 écrit sur la carte**. Versions des outils, mode d'emploi et opérations à faire
 valider avant tout flash : [AGENTS.md](AGENTS.md).
 
+Pour faire tourner sur la carte un modèle exporté par AIDGE, avec le firmware
+du SDK du porteur (caméra → NPU → écran), suivre
+**[docs/GUIDE_CARTE.md](docs/GUIDE_CARTE.md)** : installation, export,
+compilation, flash et pièges, vérifiés sur la carte du groupe.
+
 ## Vers l'Ethos-U55
 
 Compléments à la chaîne sur hôte, tous sans carte :
@@ -241,10 +246,14 @@ Compléments à la chaîne sur hôte, tous sans carte :
   Résultats dans [AGENTS.md](AGENTS.md#mesures-vela-sur-lethos-u55).
 - **`scripts/npu/export_classifier.py`**, notre premier script d'export, suit
   la convention d'entrée du kit d'Alif (`pixel − 128`), pas celle du SDK.
+- **`scripts/npu/sdk_mobilenetv2_animaux.py`** réduit le MobileNetV2 de
+  l'exemple du SDK aux 398 classes animales d'ImageNet : c'est le modèle qui
+  tourne aujourd'hui sur la carte.
 
 Ces exports demandent AIDGE et les outils du porteur (CLAUDE.md §3). Sur une
 machine sans wheel AIDGE (macOS), `scripts/npu/aidge_docker.sh` les exécute sur
-une machine Linux jointe en SSH.
+une machine Linux jointe en SSH. La suite, jusqu'à la carte, est dans
+[docs/GUIDE_CARTE.md](docs/GUIDE_CARTE.md).
 
 ## Notes d'échange
 
@@ -265,7 +274,7 @@ tests/          contrôles de parité entre la référence Python et le C++
 tools/          audits et diagnostics ponctuels, hors chaîne nominale
                 (dont u55/ : estimations Vela pour l'Ethos-U55)
 docker/         image de l'environnement AIDGE → TOSA → Vela
-docs/           architecture et table de migration
+docs/           architecture, table de migration, guide de la carte
 notes/          notes d'échange entre membres du groupe
 attic/          itérations historiques conservées pour référence
 ```

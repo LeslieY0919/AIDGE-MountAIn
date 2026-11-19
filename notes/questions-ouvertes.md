@@ -71,6 +71,9 @@ Liste tenue à jour. Répondre directement sous la question en signant, puis dé
   [la note sur l'export](2026-11-17-aidge-vers-npu.md) et dans
   [la note sur la carte](2026-11-17-contraintes-carte-et-kit.md). — LeslieY0919, 2026-11-17
 
+  Complément : le 2026-11-18, l'exemple MobileNetV2 du SDK a été compilé et flashé, et l'image de la caméra
+  s'affiche. Marche à suivre : [docs/GUIDE_CARTE.md](../docs/GUIDE_CARTE.md). — LeslieY0919, 2026-11-19
+
 - **Q6 — Quelle convention d'entrée pour les modèles ?** Celle du SDK :
   - l'ONNX prend une image dans [0, 1], en NCHW ;
   - la carte lui envoie `code = round(pixel / 255 × 127)`, avec un zéro à 0, en NHWC.

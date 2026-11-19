@@ -5,6 +5,8 @@
 - **État** : [SOURCÉ] pour ce qui est lu dans le code du kit d'évaluation ML d'Alif, de SETOOLS et du SDK du
   porteur (`alif_aidge_sdk`, `eb35a81`). Les temps et la mémoire sont des estimations de Vela. **Rien n'est
   encore mesuré sur la carte** : aucun firmware, ni le nôtre ni celui du SDK, n'a été flashé.
+- **Mise à jour** (2026-11-19) : depuis le 2026-11-18, le firmware de l'exemple MobileNetV2 du SDK est compilé et
+  flashé, et la caméra MT9M114 est confirmée. Marche à suivre et constats : [docs/GUIDE_CARTE.md](../docs/GUIDE_CARTE.md).
 
 Deux bases de firmware sont en jeu :
 
@@ -96,7 +98,7 @@ n° 4 de CLAUDE.md §7). Question posée dans [questions-ouvertes.md](questions-
 - **Caméra.**
   - Sur l'AppKit, le module par défaut est l'ARX3A0 (« The AppKit E7 ships with the ARX3A0 »). Notre carte porte
     un MT9M114 (AGENTS.md) : il faut donc passer `-DALIF_CAMERA_MODULE=MT9M114`, comme le font CLAUDE.md §3 et
-    `alif_yolo_fastest`. À confirmer au premier essai caméra.
+    `alif_yolo_fastest`. À confirmer au premier essai caméra : confirmé le 2026-11-18, l'image s'affiche.
   - La puce n'a pas d'ISP matériel.
   - `board::camera_capture` livre une image RGB888 déjà recadrée au carré central et réduite à la taille du
     modèle. La taille maximale est `max(320, entrée du modèle)` : la limite de 320 disparaît.
