@@ -80,6 +80,10 @@ archives, pas du code à maintenir.
 
 ## Depuis `clean-main` après la PR #1
 
+Dans cette section, `clean-main` désigne la branche telle qu'elle était après la
+PR #1 (`5994c61`). Depuis la PR #2 (2026-11-20), `clean-main` porte
+l'arborescence décrite ici, et c'est la seule branche du dépôt.
+
 `clean-main` avait reçu entre-temps une autre réorganisation (PR #1 :
 `training/`, `export/`, `checks/`, `dataset/`, `archive/`, `samples/`,
 `third_party/`, `standalone_wildlife_cpp/`). Elle est **remplacée** par
@@ -112,8 +116,8 @@ Les autres dossiers de `clean-main` correspondent ainsi : `training/`,
 `export_cpp_detector/`, `export_tmp/`, `export_tmp_cmp_test/`,
 `export_tmp_det_int8/` ont été retirés de l'index avec
 `git rm -r --cached`. **Les fichiers sont toujours sur le disque**, et
-l'historique de `clean-main` les conserve : rien n'est perdu, et un
-`git checkout clean-main` les fait réapparaître.
+l'historique les conserve : rien n'est perdu, et `git checkout 620dbb7` (le
+commit qui précède cette réorganisation) les fait réapparaître.
 
 Ils sont régénérables par la chaîne, et leur nouvelle place est `exports/`.
 Une fois la branche validée, ils peuvent être supprimés localement :
@@ -127,7 +131,7 @@ rm -rf export_cpp_detector export_tmp export_tmp_cmp_test export_tmp_det_int8
 `crop_animal_0.jpg`, `debug_detections.jpg`, `detection_cpp_int8_result.jpg`,
 `result_pipeline.jpg`, `test_wildlife_1mp_det.jpg`. Ce sont des images
 annotées produites par les scripts ; elles atterrissent désormais dans
-`artifacts/`, qui n'est pas versionné. L'historique de `clean-main` les garde.
+`artifacts/`, qui n'est pas versionné. L'historique les garde (`620dbb7`).
 
 ### Scories — supprimées
 
