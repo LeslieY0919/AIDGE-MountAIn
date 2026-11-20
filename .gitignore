@@ -1,61 +1,70 @@
+# ---------------------------------------------------------------------------
+# Règle générale : tout ce qui est régénérable par un script reste hors de git.
+# Les artefacts de modèles se partagent via GitHub Releases, pas par commit.
+# ---------------------------------------------------------------------------
+
 # Environnements et caches Python
 .venv/
-.venv-*/
 venv/
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+.pytest_cache/
 
-# Datasets (regenerables via dataset/build_5species_dataset.py)
-dataset_wildlife/
-dataset_wildlife_backup/
-dataset_wildlife_staging/
-datasets/
+# Datasets — reconstructibles via scripts/classifier/build_dataset.py
+/data/datasets/
+/data/calibration/
+# data/samples/ est versionné : quelques images de référence pour les contrôles.
 
-# Modeles et archives volumineuses (a partager via GitHub Releases)
-*.onnx
-*.onnx.data
-*.pt
-*.pth
-*.tflite
-*.tar.gz
-*.zip
-models/
-runs/
+# Artefacts de modèles (.pt, .onnx) — à partager via GitHub Releases.
+# Motif en /models/*/* et non /models/** : ce dernier exclurait aussi les
+# dossiers, et git ne sait pas ré-inclure un fichier dont le dossier parent
+# est exclu — les .gitkeep devenaient impossibles à committer.
+/models/*/*
+!/models/*/.gitkeep
 
-# Dossiers de compilation CMake et binaires
+# Exports C++ générés par AIDGE : 100 % régénérables, et très volumineux.
+# Contient aussi exports/wildlife_pipeline/, assemblé par build_standalone_cpp.py.
+/exports/
+
+# Anciens dossiers d'export, sortis du suivi git sur la branche d'architecture.
+# Régénérables par la chaîne ; conservés localement le temps de la transition.
+/export_cpp_detector/
+/export_tmp/
+/export_tmp_cmp_test/
+/export_tmp_det_int8/
+
+# Résultats de run : images annotées, tampons .bin, journaux
+/artifacts/
+
+# Compilation
 **/build/
 **/build_*/
 *.o
 *.so
 *.a
 *.bin
+# Les binaires produits (wildlife_pipeline, run_export) ne sont pas listés par
+# leur nom : un motif nu `wildlife_pipeline` ignorerait aussi le DOSSIER
+# cpp/wildlife_pipeline/. Ils vivent sous exports/ et **/build/, déjà exclus.
+
+# Modèles, où qu'ils se trouvent (ONNX, PyTorch, TFLite, TOSA, firmware)
+*.onnx
+*.pt
+*.tflite
+*.tosa
 *.axf
-*.elf
-wildlife_pipeline
-run_export
 
-# Exports C++ generes automatiquement par Aidge (regenerables par les scripts de export/)
-export_cpp_*/
-export_tmp*/
-standalone_wildlife_cpp/detector_dnn/
-standalone_wildlife_cpp/classifier_dnn/
-exported_graph.mmd
+# Outils de la carte clonés ou sauvegardés à côté du dépôt : kit d'évaluation
+# ML d'Alif (scripts/board/build_img_class.sh) et copie du firmware d'usine.
+/external/
+/backup/
 
-# Images et fichiers de sortie temporaires (ecrits a la racine par les scripts)
-*_result.jpg
-result_*.jpg
-debug_*.jpg
-crop_animal_*.jpg
-*_det.jpg
-dump_pixels.txt
-*.bak
-
-# Outils et sauvegardes propres a la carte Alif E7 (locaux, non partages)
-external/
-backup/
-
-# Notes et reglages propres a chaque machine
+# Réglages propres à une machine : chemins des outils, port série, notes.
+/scripts/board/env.local.sh
 CLAUDE.local.md
-scripts/env.local.sh
+/.venv-yolo/
+
+# Divers
 .DS_Store

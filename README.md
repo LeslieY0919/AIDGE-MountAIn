@@ -1,201 +1,396 @@
-# AIDGE-MountAIn — surveillance de la faune sur Cortex-M55 + Ethos-U55
+# AIDGE MountAIn — détection et identification d'animaux sauvages
 
-Projet du **Challenge Aidge 2026**, sujet « **AIDGE for Wildlife Monitoring** » proposé par MountAIn :
-détecter les animaux sauvages et reconnaître leur espèce directement sur un microcontrôleur IA très
-basse consommation, à partir de la caméra de la carte, avec un déploiement par
-[Eclipse Aidge](https://eclipse.dev/aidge/).
+Challenge AIDGE 2026, défi **MountAIn**. Chaîne de traitement complète :
 
-## Sommaire
-
-- [Le sujet](#le-sujet)
-- [Notre approche](#notre-approche)
-- [État d'avancement](#état-davancement)
-- [Organisation du dépôt](#organisation-du-dépôt)
-- [Démarrage](#démarrage)
-- [Contribuer](#contribuer)
-- [Liens](#liens)
-
-## Le sujet
-
-Objectifs fixés par MountAIn
-([plaquette](https://deepgreen.ai/storage/PDF/Plaquette_ChallengeAidge.pdf), p. 8) :
-
-1. Entraîner un modèle YOLO sur un jeu de données spécialisé et le déployer sur une cible embarquée avec
-   Aidge, en réduisant la résolution des images si besoin.
-2. Profiler l'exécution du modèle pour trouver les couches à optimiser et les pics d'utilisation mémoire.
-3. Restructurer le modèle et optimiser les noyaux de calcul pour améliorer la performance et augmenter la
-   résolution.
-
-Le jury attribue deux prix ([règlement](https://deepgreen.ai/storage/PDF/Reglement-ChallengeAidge.pdf)) :
-**meilleur démonstrateur** (2 000 €) et **meilleure contribution à Aidge** (1 000 €). Les livrables, un
-rapport en PDF et une vidéo de démonstration publiés sous CC BY 4.0, sont à rendre avant le
-**31 décembre 2026** ; soutenance le **14 janvier 2027**.
-
-**Matériel.** La carte cible est l'**AppKit Alif Ensemble E7** prêtée pour le challenge :
-Cortex-M55 + Ethos-U55 (256 MAC) pour la partie haute performance, Cortex-M55 + Ethos-U55 (128 MAC) pour
-la partie basse consommation, 13,5 Mo de SRAM, 5,5 Mo de MRAM, caméra MT9M114 et écran LCD 480×800.
-
-## Notre approche
-
-Un pipeline en deux étapes, entièrement sur le M55-HP et son Ethos-U55 :
-
-```mermaid
-flowchart LR
-    A[Caméra<br/>1280×720] --> B[Image réduite]
-    B --> C[Détecteur<br/>MegaDetector v6<br/>MDV6-yolov10-c]
-    C -->|boîtes « animal »| D[Découpe dans<br/>l'image d'origine]
-    A --> D
-    D --> E[Classifieur<br/>d'espèces, 128×128]
-    E --> F[Espèce + score<br/>à l'écran]
+```
+image caméra → REDIMENSIONNER → DÉTECTER (MegaDetector v6) → DÉCOUPER → CLASSIFIER → « Chamois »
 ```
 
-- **Détecteur** : MegaDetector v6 (`MDV6-yolov10-c`, famille YOLOv10), affiné sur nos données. Son rôle
-  se limite à trouver les animaux.
-- **Classifieur** : reconnaît l'espèce sur chaque découpe. Classes actuelles (`class_names.json`) :
-  blaireau, chevreuil, écureuil, renard, sanglier.
-- **Pourquoi deux étapes** : le détecteur voit l'image entière fortement réduite, où un animal lointain
-  ne fait que quelques dizaines de pixels ; le classifieur travaille sur la découpe de l'image d'origine,
-  avec beaucoup plus de détails, pour un coût de quelques millisecondes par animal. Ce choix sera validé
-  en le comparant à un détecteur unique qui sort directement l'espèce.
-- **Adaptation à l'Ethos-U55** : les premières mesures Vela montrent que les activations SiLU et le bloc
-  d'attention PSA de YOLOv10 coûtent cher sur le NPU (respectivement environ 45 % et 30 % du temps) ; les
-  remplacer par ReLU et retirer le PSA divise le temps d'inférence par environ 3 (estimation Vela sur
-  YOLOv10n). Détails et chiffres dans
-  [AGENTS.md](AGENTS.md#modèles).
+Cible finale : le kit **Alif Ensemble E7 AppKit** (deux Cortex-M55, chacun avec
+son NPU Ethos-U55), via la chaîne outil **Eclipse AIDGE**. Ce dépôt porte
+l'étape qui précède le portage : entraîner, exporter, quantifier en int8 et
+valider les deux modèles sur hôte Linux avec `aidge_export_cpp`.
 
-## État d'avancement
+Le contexte complet du défi (exigences, budgets mémoire, décisions
+d'architecture, pièges connus de la chaîne outil) est dans **[CLAUDE.md](CLAUDE.md)**.
 
-| Étape | État | Où |
+---
+
+## Prérequis — attention à la plateforme
+
+| | Chaîne d'entraînement et d'export | Console de la carte |
 |---|---|---|
-| Jeu de données à 5 espèces | script prêt | `dataset/` |
-| Affinage du détecteur (640×640) | script prêt | `training/train_mdv6.py` |
-| Entraînement du classifieur (128×128) | script prêt | `training/` |
-| Quantification INT8 et export C++ par Aidge, pipeline complet sur PC Linux | réalisé | `export/`, `standalone_wildlife_cpp/` |
-| Profilage sur Ethos-U55 (Vela) | fait pour YOLOv10n et MobileNetV2 ; MegaDetector v6 à mesurer | `u55/` |
-| Firmware de la carte : caméra → NPU → écran | à faire | — |
-| Déploiement Aidge sur la carte (cible `ake7`, NPU via TOSA) | à faire | — |
-| Contributions à Aidge (`aidge_tosa` : Concat, Slice, pooling avec padding, plusieurs sorties par région NPU) | à étudier | — |
+| **Linux x86_64** | oui | oui |
+| **Windows amd64** | oui | oui |
+| **macOS** (Intel ou Apple Silicon) | **non** | oui |
 
-## Organisation du dépôt
+AIDGE ne publie des roues que pour **Linux x86_64** et **Windows amd64**. Il
+n'existe ni roue macOS ni archive source de repli : sur un Mac, `pip` répond
+`Could not find a version that satisfies the requirement aidge-core`, et
+aucune version de Python n'y change quoi que ce soit. `make install` le
+détecte et le dit avant de lancer une résolution de plusieurs minutes.
 
-| Dossier | Contenu |
-|---|---|
-| `dataset/` | Construction du jeu de données à 5 espèces (iNaturalist, découpes par MegaDetector) |
-| `training/` | Récupération de MegaDetector v6, entraînement du détecteur et du classifieur |
-| `export/` | Découpe et pliage ONNX, quantification INT8 et export C++ par Aidge, assemblage du pipeline autonome |
-| `checks/` | Vérifications : C++ contre ONNX Runtime, pipeline Python de référence, diagnostic de la quantification |
-| `standalone_wildlife_cpp/` | Pipeline C++ autonome (détecteur + classifieur), généré par `export/build_standalone_cpp.py` |
-| `u55/` | Profilage Vela sur Ethos-U55, décodage de référence de YOLOv10 pour le M55 |
-| `scripts/` | Environnement et compilation pour la carte Alif E7, Aidge dans Docker sur une machine Linux |
-| `aidge/` | Image Docker Aidge (TOSA, export Ethos-U, Vela) |
-| `samples/` | Images de test |
-| `third_party/` | Dépendances C++ embarquées (`stb_image.h`) |
-| `archive/` | Explorations et versions précédentes, conservées pour mémoire, non maintenues |
+Un Mac reste parfaitement utilisable pour **parler à la carte**
+(`make install-board`) et pour relire le code. L'entraînement, l'export et la
+quantification demandent une machine Linux x86_64 ou Windows amd64 — ce qui
+tombe bien, puisque `configs/classifier.yaml` est dimensionné pour un GPU de
+16 Go.
 
-Les modèles (`*.onnx`, `*.pt`), les jeux de données et les exports générés par Aidge ne sont pas
-versionnés ; les modèles se partagent via les GitHub Releases.
+Pour l'export vers le NPU depuis un Mac, `docker/aidge/Dockerfile` décrit une
+image Linux avec AIDGE 0.10.1, `aidge_tosa` et Vela, et
+`scripts/npu/aidge_docker.sh` y exécute une commande sur une machine Linux
+jointe en SSH. L'image ne contient ni torch ni ONNX Runtime : elle ne remplace
+pas `make install` pour l'entraînement et les contrôles sur hôte.
+
+Python **3.11 ou 3.12**, pas 3.13 (CLAUDE.md §3).
+
+> Les paquets `aidge-*` sont épinglés à `>=0.10.1,<0.11`, la plage documentée
+> comme connue bonne. Sans borne haute, `pip` installerait 0.11.0, dont l'API
+> diffère. À noter : AIDGE 0.11 publie désormais des roues cp313 et déclare
+> `requires-python >=3.10`, ce qui suggère que la contrainte 3.11/3.12 vient
+> d'autres composants de la chaîne (`aidge_tosa`, `tosa-tools`, `vela`). À
+> vérifier avant de relever les bornes.
 
 ## Démarrage
 
-Tous les scripts Python se lancent **depuis la racine du dépôt**, par exemple
-`python export/quantize_pipeline_int8.py` : leurs chemins (modèles, `class_names.json`, `samples/`,
-dossiers d'export) sont relatifs à la racine.
-
-### Environnement Python (entraînement et export)
-
-Python 3.12 est utilisé pour l'environnement de développement.
-
-Linux / macOS :
-
 ```bash
-python3.12 -m venv .venv
+make venv                      # crée .venv avec un Python 3.11/3.12
 source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m pip install --no-deps aidge-quantization
+make install                   # chaîne complète
 ```
 
-Windows (PowerShell) :
+Trois points sur lesquels on se casse les dents sans ces cibles :
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m pip install --no-deps aidge-quantization
-```
+- **la version.** AIDGE exige Python **3.11 ou 3.12** — ni 3.13, ni moins.
+  `make` ne prend donc pas `python` au hasard dans le `PATH` : il cherche le
+  premier interpréteur compatible (`python3.12`, `python3.11`, `python3`), en
+  laissant gagner un venv déjà actif. Sur macOS, `python3` est très souvent un
+  3.9 livré par le système, et `python` n'existe pas du tout. Forcer avec
+  `make PYTHON=/chemin/vers/python3.12 <cible>` ;
+- **l'environnement virtuel.** Homebrew et les Python de distribution se
+  déclarent « externally managed » (PEP 668) et refusent toute installation
+  en dehors d'un venv. `make install` le détecte et dit quoi faire, au lieu de
+  laisser `pip` répondre par un pavé ;
+- **l'installation elle-même n'est pas optionnelle.** Les scripts importent le
+  paquet `mountain` ; sans `make install`, chacun échoue sur
+  `ModuleNotFoundError: No module named 'mountain'`. C'est le prix du layout
+  `src/`, et c'est voulu — il n'y a plus d'import accidentel depuis le
+  répertoire courant.
 
-L'installation de `aidge-quantization` avec `--no-deps` évite de télécharger `aidge-backend-cuda`, qui
-n'est pas nécessaire aux flux CPU utilisés ici. Les dépendances `aidge-core`, `aidge-backend-cpu` et
-`numpy` sont déjà installées par `requirements.txt`.
+Pour ne parler qu'à la carte, `make install-board` suffit : cinq paquets, ni
+torch ni AIDGE.
 
-La distribution officielle de `aidge-quantization` déclare néanmoins `aidge-backend-cuda` comme
-dépendance obligatoire dans ses métadonnées. Par conséquent, `pip check` peut signaler cette dépendance
-absente, même si les imports et flux CPU concernés fonctionnent. Pour utiliser le backend CUDA,
-installez `aidge-quantization` sans `--no-deps` et configurez le CUDA Toolkit ainsi que `CUDA_PATH`.
+`make install` ajoute aussi `aidge-quantization` avec `--no-deps`. Ce
+`--no-deps` est volontaire : les métadonnées du paquet déclarent
+`aidge-backend-cuda` comme obligatoire alors que la chaîne CPU utilisée ici
+n'en a pas besoin. `pip check` signalera donc une dépendance absente — sans
+conséquence. Pour le backend CUDA, installer `aidge-quantization` sans
+`--no-deps` et configurer `CUDA_PATH`.
 
-Aidge ne publie des wheels que pour Linux x86_64 et Windows. Sous macOS, utiliser l'image Docker de
-`aidge/` (voir [AGENTS.md](AGENTS.md#aidge-sous-macos)).
+`make help` liste toutes les cibles.
 
-### Chaîne de production des modèles
+## La chaîne, dans l'ordre
 
-1. `dataset/build_5species_dataset.py` : construit `dataset_wildlife/`.
-2. `training/train_mdv6.py` : affine MegaDetector v6 en 640 et produit `detector_v6_trained_640.onnx` ;
-   `training/train_classifier_gpu.py` entraîne le classifieur en 128 et produit
-   `species_classifier.onnx`.
-3. `export/export_detector_v6.py` : coupe le détecteur avant le post-traitement
-   (`MDV6-yolov10-c_cut_folded.onnx`) et fait l'export C++ float32 ; `export/export_classifier.py`
-   produit `species_classifier_folded.onnx`.
-4. `export/quantize_pipeline_int8.py` : quantification INT8 et export C++ (`export_cpp_detector_int8/`,
-   `export_cpp_classifier_int8/`).
-5. `export/build_standalone_cpp.py` : assemble `standalone_wildlife_cpp/`.
+| # | Commande | Produit |
+|---|---|---|
+| 1 | `make detector-weights` | `models/detector/MDV6-yolov10-c.{pt,onnx}` |
+| 2 | `make dataset` | `data/datasets/wildlife/{train,val}/<espèce>/` |
+| 3 | `make train-classifier` | `models/classifier/species_classifier.onnx` |
+| 4 | `make export-detector` | `exports/detector_fp32/` |
+| 5 | `make export-classifier` | `exports/classifier_fp32/` |
+| 6 | `make quantize` | `exports/detector_int8/`, `exports/classifier_int8/` |
+| 7 | `make build-cpp` | `exports/wildlife_pipeline/build/wildlife_pipeline` |
+| 8 | `make check` | contrôles de parité Python ↔ C++ |
 
-### Pipeline C++ sur PC Linux
+`make test` est à part : il lance `pytest` sur les `test_*.py`, et il n'y en a
+aucun pour l'instant. Les contrôles de `tests/` sont préfixés `check_` parce
+qu'ils ont besoin d'artefacts construits — voir [tests/README.md](tests/README.md).
 
-Nécessite CMake 3.16+, un compilateur C++17 et les sources générées par Aidge (étapes 3 à 5 ci-dessus).
-Sous Debian/Ubuntu :
+Les étapes 4 et 5 sont des contrôles de faisabilité en fp32 : elles valident
+qu'AIDGE sait exporter les graphes avant d'ajouter la difficulté de la
+quantification. On peut passer directement de 3 à 6, mais en cas d'échec il
+sera plus difficile de savoir si le problème vient du graphe ou de la PTQ.
+
+### Exécuter le pipeline C++
 
 ```bash
-sudo apt install build-essential cmake
-cmake -S standalone_wildlife_cpp -B standalone_wildlife_cpp/build -DCMAKE_BUILD_TYPE=Release
-cmake --build standalone_wildlife_cpp/build -j2
-standalone_wildlife_cpp/build/wildlife_pipeline samples/test_wildlife_1mp.jpg
+make build-cpp
+exports/wildlife_pipeline/build/wildlife_pipeline data/samples/test_wildlife_1mp.jpg
 ```
 
-Le CMake attend les sources générées dans `standalone_wildlife_cpp/detector_dnn/` et
-`standalone_wildlife_cpp/classifier_dnn/`, qui ne sont pas versionnées : le pipeline ne se compile donc
-pas à partir du dépôt seul.
+`make build-cpp` **génère intégralement** `exports/wildlife_pipeline/` : il
+efface le dossier, y recopie les sources `dnn/` des deux exports int8, puis
+écrit `main.cpp`, `CMakeLists.txt` et les deux scripts de version de
+l'éditeur de liens. L'étape 6 est donc un prérequis.
 
-### Carte Alif Ensemble E7
+Ce qui est versionné sous `cpp/wildlife_pipeline/` n'est qu'un **instantané de
+référence** de cette sortie, pour pouvoir la relire et en suivre les
+changements — voir le [README du dossier](cpp/wildlife_pipeline/README.md).
 
-```sh
-source scripts/env.sh                                # outils de la carte (chemins redéfinissables dans scripts/env.local.sh)
-.venv-yolo/bin/python u55/profile_yolov10_u55.py     # profilage Vela d'un détecteur sur Ethos-U55
-scripts/build_img_class.sh                           # firmware de démonstration du kit ML d'Alif
+## Se connecter à la carte
+
+```bash
+make venv && source .venv/bin/activate
+make install-board                   # léger : pyserial, sans torch ni AIDGE
+make board-list                      # quels ports série sont visibles ?
+make connect                         # console applicative, journalisée dans artifacts/
 ```
 
-Installation des outils (J-Link, SETOOLS, Arm GNU Toolchain, kit d'évaluation ML d'Alif), branchement de
-la carte et contraintes du NPU : voir [AGENTS.md](AGENTS.md#environnement-de-la-carte).
+`make install-board` installe cinq paquets. Une machine qui ne sert qu'à
+parler à la carte n'a aucune raison d'installer torch — c'est `make install`
+qui ajoute la chaîne d'entraînement et d'export.
 
-> ⚠️ Flasher la MRAM remplace la démo d'usine, et la mise à jour du firmware de sécurité est
-> irréversible. Ces opérations se décident en équipe (voir
-> [AGENTS.md](AGENTS.md#opérations-à-faire-valider)).
+Le port **PRG USB** de l'AppKit expose **deux UART**, et les confondre est le
+piège le plus coûteux de la chaîne :
 
-## Contribuer
+| | Débit | Rôle |
+|---|---|---|
+| console applicative | 57 600 **[MESURÉ]** | les temps d'inférence (REQ-023) — défaut du script |
+| UART Secure Enclave | 55 000 | SETOOLS, programmation de la MRAM (`--se`) |
 
-- Tout ce qui est écrit dans le dépôt est en français : documentation, commentaires, messages de commit,
-  descriptions de PR.
-- Travailler sur une branche et ouvrir une pull request vers `clean-main`.
-- Ne pas versionner les modèles, les jeux de données ni les exports générés (voir `.gitignore`).
-- `archive/` n'est plus maintenu : ne pas en dépendre.
-- Les consignes détaillées (y compris pour les assistants de code) sont dans [AGENTS.md](AGENTS.md).
+Se tromper ne lève aucune erreur : on obtient du binaire illisible, ou un flash
+qui échoue parce qu'on parlait sur le lien pendant la programmation. D'où
+`--scan`, qui essaie une série de débits et dit lequel décode :
 
-**Équipe** : KiraAme, MatgamFR, FogCfan, LeslieY0919.
+```bash
+python scripts/board/connect.py --scan
+```
 
-**Licence** : à définir. Les livrables du challenge (rapport et vidéo) sont publiés sous CC BY 4.0.
+Le piège du balayage est la tolérance de l'UART : chaque caractère se
+resynchronise sur son bit de start, donc plusieurs débits voisins décodent.
+Le vrai débit est au **centre** de la fenêtre, pas à son bord — `--scan`
+encadre des deux côtés pour le situer, et l'annonce.
 
-## Liens
+Les 57 600 bauds de `configs/board.yaml` viennent de cette mesure : fenêtre
+55 000–60 000, centre 57 500. Ils **infirment** l'hypothèse de 115 200
+(REQ-113). Ce que ce port est exactement reste à établir : le flux observé
+est un spinner ANSI, pas une application traçant ses temps d'inférence —
+relancer `--scan` quand le firmware applicatif tournera.
 
-- [Règlement du challenge](https://deepgreen.ai/storage/PDF/Reglement-ChallengeAidge.pdf) et
-  [plaquette des sujets](https://deepgreen.ai/storage/PDF/Plaquette_ChallengeAidge.pdf)
-- [Eclipse Aidge](https://eclipse.dev/aidge/) et [`aidge_tosa`](https://gitlab.eclipse.org/eclipse/aidge/aidge_tosa)
-- [MegaDetector v6 (Pytorch-Wildlife)](https://github.com/microsoft/CameraTraps)
-- [Kit d'évaluation ML d'Alif](https://github.com/alifsemi/alif_ml-embedded-evaluation-kit)
+### Ce qui est démontré, et ce qui ne l'est pas
+
+**La réception fonctionne.** `--scan` décode proprement à 57 600 bauds un flux
+périodique et intelligible (séquences ANSI + spinner). Cela prouve le lien
+physique, le bon port et le bon débit.
+
+**L'émission n'est pas démontrée.** Écrire sur ce port bloque la réception
+~2,2 s, puis le flux se déverse d'un coup avec 4 octets parasites
+(`04 FF FA 03`) en tête. Mesuré avec témoin : sans envoi, une trame toutes les
+~0,8 s ; avec envoi, rien pendant 2,2 s puis une rafale. C'est un artefact de
+reprise, pas une réponse — rien n'indique que la carte traite ce qu'on lui
+envoie. Utiliser `--read-only` pour lire des traces.
+
+Un aller-retour réel se démontrera soit avec un firmware applicatif exposant
+une commande, soit via SETOOLS sur l'UART du Secure Enclave, qui fait une vraie
+poignée de main et renvoie la référence du composant (`make board-check`).
+SETOOLS n'existe que pour Linux et Windows.
+
+Deux précisions tirées de la carte du groupe (AppKit avec J-Link embarquée) :
+macOS n'y voit qu'**un seul** port, que les cavaliers J15 relient soit à
+l'UART du Secure Enclave (position par défaut), soit à la console applicative
+(UART2) ; et SETOOLS est aussi publié pour macOS (1.112.00, dossier
+`app-release-exec-macos`), c'est la version que désigne `scripts/board/env.sh`.
+Détails dans [AGENTS.md](AGENTS.md#matériel).
+
+Quand deux ports indiscernables apparaissent, le script ne devine pas — les
+deux interfaces CDC d'un même composite USB ont le même genre de nom. Il
+demande `--port`.
+
+```bash
+make board-check                                     # SETOOLS voit-il un E7 ?
+python scripts/board/connect.py --port /dev/cu.usbmodem103
+python scripts/board/connect.py --se --read-only     # écouter le Secure Enclave
+```
+
+`make board-check` suppose `$SETOOLS` défini et déjà configuré depuis la carte :
+
+```bash
+export SETOOLS=/chemin/vers/app-release-exec-linux
+(cd $SETOOLS && ./tools-config -a -b 55000 -c /dev/alif-se)
+```
+
+### Outils de la carte et firmware de démonstration
+
+```bash
+source scripts/board/env.sh          # J-Link, SETOOLS, toolchain Arm, kit d'Alif
+make board-firmware                  # compile la démo img_class du kit, sans flasher
+```
+
+`scripts/board/env.sh` fixe les chemins des outils (redéfinissables dans
+`scripts/board/env.local.sh`, non versionné) et définit `$SETOOLS`.
+`make board-firmware` compile l'exemple de classification du kit d'évaluation
+ML d'Alif avec le modèle de son choix et prépare le paquet ATOC ; **rien n'est
+écrit sur la carte**. Versions des outils, mode d'emploi et opérations à faire
+valider avant tout flash : [AGENTS.md](AGENTS.md).
+
+Pour faire tourner sur la carte un modèle exporté par AIDGE, avec le firmware
+du SDK du porteur (caméra → NPU → écran), suivre
+**[docs/GUIDE_CARTE.md](docs/GUIDE_CARTE.md)** : installation, export,
+compilation, flash et pièges, vérifiés sur la carte du groupe.
+
+## Vers l'Ethos-U55
+
+Compléments à la chaîne sur hôte, tous sans carte :
+
+- **`scripts/npu/sdk_export_report.py`** exporte un ONNX par la chaîne du SDK
+  du porteur (PTQ int8 d'AIDGE → fork `aidge_tosa` → Vela → `.tflite` pour le
+  NPU) et résume le résultat. MobileNetV2 et YOLOv10n passent entièrement sur
+  le NPU. Pour le détecteur, il y a deux préalables :
+  - passer d'abord **`scripts/npu/onnx_slices_to_split.py`** sur l'ONNX ;
+  - installer `aidge_export_ethos` depuis la branche `feat/ethos-be-lowering`
+    du fork du porteur.
+
+  Résultats dans [AGENTS.md](AGENTS.md#aidge--ethos-u55).
+- **`tools/u55/`** estime avec Vela, par la conversion TFLite, le temps
+  d'inférence et la mémoire d'un modèle sur l'Ethos-U55, couche par couche.
+  Résultats dans [AGENTS.md](AGENTS.md#mesures-vela-sur-lethos-u55).
+- **`scripts/npu/export_classifier.py`**, notre premier script d'export, suit
+  la convention d'entrée du kit d'Alif (`pixel − 128`), pas celle du SDK.
+- **`scripts/npu/sdk_mobilenetv2_animaux.py`** réduit le MobileNetV2 de
+  l'exemple du SDK aux 398 classes animales d'ImageNet : c'est le modèle qui
+  tourne aujourd'hui sur la carte.
+
+Ces exports demandent AIDGE et les outils du porteur (CLAUDE.md §3). Sur une
+machine sans wheel AIDGE (macOS), `scripts/npu/aidge_docker.sh` les exécute sur
+une machine Linux jointe en SSH. La suite, jusqu'à la carte, est dans
+[docs/GUIDE_CARTE.md](docs/GUIDE_CARTE.md).
+
+## Notes d'échange
+
+[notes/](notes/README.md) rassemble ce que chacun a essayé, mesuré ou
+découvert, et les questions à trancher ensemble. Ce ne sont pas des documents
+de référence : on y écrit pour se tenir au courant, et on reporte ici ou dans
+CLAUDE.md ce qui est devenu stable.
+
+## Carte du dépôt
+
+```
+configs/        toute la configuration — seuils, résolutions, hyperparamètres
+src/mountain/   le socle commun, importable : chemins, config, pré-traitement, AIDGE
+scripts/        les points d'entrée exécutables, groupés par étape de la chaîne
+                (detector, classifier, quantize, pipeline, board, npu)
+cpp/            sources C++ : harnais du détecteur, instantané du pipeline, tiers
+tests/          contrôles de parité entre la référence Python et le C++
+tools/          audits et diagnostics ponctuels, hors chaîne nominale
+                (dont u55/ : estimations Vela pour l'Ethos-U55)
+docker/         image de l'environnement AIDGE → TOSA → Vela
+docs/           architecture, table de migration, guide de la carte
+notes/          notes d'échange entre membres du groupe
+attic/          itérations historiques conservées pour référence
+```
+
+Et les quatre dossiers de données, dont un seul est versionné :
+
+| Dossier | Contenu | Versionné |
+|---|---|---|
+| `data/samples/` | images de référence des contrôles | **oui** |
+| `data/datasets/` | datasets construits par script | non |
+| `models/` | `.pt` et `.onnx` — à partager via GitHub Releases | non |
+| `exports/` | sources C++ générées par AIDGE | non |
+| `artifacts/` | images annotées, tampons `.bin`, journaux | non |
+
+La règle est simple : **si un script peut le régénérer, git ne le suit pas.**
+
+## Deux principes à respecter
+
+**Aucun chemin en dur.** Tout fichier se désigne par une constante de
+`mountain.paths`. C'est ce qui permet de lancer n'importe quel script depuis
+n'importe quel répertoire, et de déplacer un artefact sans corriger quinze
+fichiers.
+
+```python
+from mountain import paths
+graph = load_graph(paths.DETECTOR_ONNX_CUT_FOLDED, [1, 3, 640, 640])
+```
+
+**Aucune constante magique.** Seuils, résolutions et hyperparamètres viennent
+de `configs/`, lus par `mountain.config`. Le seuil de confiance du détecteur
+doit avoir la même valeur dans la référence Python et dans le C++ ; une
+constante dupliquée est une divergence en attente.
+
+```python
+from mountain import config
+conf = config.detector()["postprocess"]["conf_threshold"]
+```
+
+## Déboguer le post-traitement
+
+Le décodage des ancres DFL + sigmoïde + NMS existe en deux exemplaires : la
+référence Python (`scripts/pipeline/run_reference.py`) et le C++
+(`cpp/detector_standalone/`). C'est assumé — le C++ est la cible, Python est
+l'oracle. **Tout changement de post-traitement se valide en comparant les deux**
+(`make check`). C'est le seul moyen raisonnable de déboguer un décodeur
+d'ancres, et `alif_yolo_fastest` procède exactement ainsi.
+
+## Écarts connus avec le modèle MBSE
+
+À trancher avant le portage sur carte, documentés dans `configs/classifier.yaml` :
+
+- le classifieur est un **ResNet-34 à 128×128**, là où la décision d'équipe
+  retenait **MobileNetV2 à 96×96**. ResNet-18 avait été écarté pour ses ~11 Mo
+  de poids, hors budget MRAM : un ResNet-34 ne tiendra pas dans le 1 Mo alloué
+  (REQ-105) ;
+- le détecteur est exporté à **640×640** sur hôte, contre un objectif de
+  320×320 (REQ-002). Une image 640×640 ne tient pas dans l'arène de 2,5 Mo
+  visée pour le domaine HP.
+
+Les deux écarts sont sans conséquence pour la validation sur hôte Linux, et
+bloquants pour l'embarqué. Mesurer avant de décider (cf. CLAUDE.md §10).
+
+## Dépannage
+
+**`Could not find a version that satisfies the requirement aidge-core`**
+
+Ce n'est pas un problème de version mais de **plateforme** : AIDGE ne publie
+aucune roue macOS. Voir la section Prérequis. Sur un Mac, s'en tenir à
+`make install-board` et faire tourner la chaîne sur une machine Linux x86_64.
+
+**`Package 'mountain' requires a different Python: 3.9.x not in '<3.13,>=3.11'`**
+
+Le `pip` utilisé appartient à un Python trop ancien. AIDGE impose 3.11 ou
+3.12. Les cibles `make` choisissent l'interpréteur pour vous :
+
+```bash
+make venv && source .venv/bin/activate && make install
+```
+
+Si aucun Python compatible n'est présent, `make` liste les interpréteurs
+visibles et leurs versions plutôt que d'échouer sur un message de `pip`.
+
+**`error: externally-managed-environment`**
+
+Le Python visé refuse d'installer hors environnement virtuel (PEP 668), ce qui
+est le cas de Homebrew. Créer le venv : `make venv && source .venv/bin/activate`.
+En dernier recours, `make PIP_FLAGS=--break-system-packages install` passe
+outre — au risque d'abîmer l'installation Python du système.
+
+**`ModuleNotFoundError: No module named 'mountain'`**
+
+Le paquet n'est pas installé dans l'environnement courant. C'est l'erreur la
+plus probable sur une machine neuve :
+
+```bash
+cd <racine du dépôt>
+make install          # chaîne complète
+make install-board    # ou le minimum, pour la carte uniquement
+```
+
+Si l'erreur persiste, c'est que `pip` et `python` ne pointent pas vers le même
+environnement. Vérifier avec `python -c "import sys; print(sys.prefix)"` et
+`pip -V`.
+
+**Aucun port série trouvé, ou plusieurs ports candidats**
+
+`make board-list` écarte déjà les pseudo-ports permanents de macOS
+(Bluetooth, console de debug, debug Wi-Fi) et les nœuds `/dev/tty.*`. Sur
+macOS, n'utiliser que `/dev/cu.*` : `/dev/tty.*` désigne le même port côté
+« appel entrant » et son ouverture bloque indéfiniment en attente de porteuse
+(DCD), que la carte n'assure pas. La liste des exclusions est dans
+`configs/board.yaml`.
+
+S'il reste plusieurs candidats, le script ne devine pas et demande `--port`.
+
+**`cmake` ne trouve pas `detector_dnn/` ou `classifier_dnn/`**
+
+Ces sources sont générées : lancer `make quantize` puis `make build-cpp`. Le
+pipeline C++ ne se compile pas depuis le dépôt seul.

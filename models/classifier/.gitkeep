@@ -1,0 +1,3 @@
+Destination des poids du classifieur (.pt, .onnx). Le contenu n'est pas versionné :
+voir mountain.paths pour les noms attendus, et le README pour la chaîne qui les produit.
+Les artefacts se partagent via GitHub Releases.

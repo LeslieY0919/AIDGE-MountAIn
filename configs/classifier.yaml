@@ -1,0 +1,56 @@
+# Classifieur d'espèces
+#
+# ATTENTION — deux écarts assumés avec le modèle MBSE (CLAUDE.md §2), à
+# trancher avant le portage sur carte :
+#   * architecture : ResNet-34 ici, MobileNetV2 dans la décision d'équipe
+#     (ResNet-18 avait été écarté pour ses ~11 Mo de poids, hors budget MRAM) ;
+#   * résolution : 128x128 ici, 96x96 dans le modèle ([POSÉ], REQ-106).
+# Le ResNet-34 tient sur hôte Linux mais ne rentrera pas dans le 1 Mo de MRAM
+# alloué au classifieur (REQ-105). Mesurer avant de décider.
+
+model:
+  architecture: resnet34
+  pretrained: true
+  dropout: 0.30
+
+# Taille d'entrée. Doit correspondre exactement à l'in_shape utilisé par la
+# quantification et par l'export C++ — un écart ici casse l'export.
+input_size: 128
+target_input_size: 96     # [POSÉ] objectif embarqué, REQ-106
+
+# Normalisation ImageNet. Partagée par l'entraînement, la calibration PTQ et
+# la vérification : voir mountain.preprocess, qui en est la seule source.
+normalization:
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+training:
+  batch_size: 128         # dimensionné pour 16 Go de VRAM ; stabilise BatchNorm
+  num_workers: 4
+  epochs_head: 6          # phase 1 : chauffe de la tête de classification
+  epochs_full: 44         # phase 2 : fine-tuning complet du backbone
+  lr_head: 1.5e-3
+  lr_backbone: 3.0e-4
+  weight_decay: 1.0e-2
+
+# Construction du dataset — scripts/classifier/build_dataset.py récupère des
+# observations iNaturalist puis recadre les animaux avec le détecteur.
+dataset:
+  species:                # nom de classe -> nom scientifique (requête iNaturalist)
+    blaireau: Meles meles
+    chevreuil: Capreolus capreolus
+    ecureuil: Sciurus vulgaris
+    renard: Vulpes vulpes
+    sanglier: Sus scrofa
+  target_per_class: 650   # ~3250 images recadrées au total
+  val_ratio: 0.15         # 85 % train / 15 % val
+  max_total_minutes: 20.0 # garde-fou sur la durée de collecte
+  crop_conf_threshold: 0.45  # confiance minimale du détecteur pour garder un crop
+  crop_min_box_px: 32     # rejette les animaux trop petits pour être appris
+  crop_margin: 0.10       # marge autour de la boîte, en fraction de sa taille
+  workers: 4
+  user_agent: AidgeWildlife5Species/1.0
+
+# Objectif de performance : REQ-016, top-1 >= 80 % [POSÉ].
+targets:
+  top1_accuracy: 0.80

@@ -1,0 +1,90 @@
+# Carte cible — Alif Ensemble E7 AppKit
+#
+# Branchée sur son port **PRG USB** (REQ-029). Ce port expose généralement
+# deux interfaces série : celle du Secure Enclave et la console applicative.
+# Les confondre est le piège n° 6 de CLAUDE.md.
+
+# Référence attendue du composant. `connect.py --setools` vérifie que SETOOLS
+# voit bien celle-ci, et pas un autre membre de la famille Ensemble.
+part_number: AE722F80F55D5
+
+serial:
+  # Console applicative : c'est là que sortent les temps d'inférence (REQ-023).
+  #
+  # [MESURÉ 17/11/2026] 57600 est le seul débit auquel le port J-Link exposé
+  # par la carte décode proprement. Établi par `connect.py --scan` : la fenêtre
+  # qui décode va de 55000 à 60000, centrée sur 57600 — 52500 et 62500
+  # échouent. Si le vrai débit était 55000, 52500 passerait et 60000 non.
+  #
+  # La valeur [POSÉ] de REQ-113 était 115200 : elle est infirmée pour ce port.
+  # Reste à établir *ce que* ce port est (cf. CLAUDE.md §6) : le contenu
+  # observé est un spinner ANSI, pas une application qui trace ses temps
+  # d'inférence. Relancer --scan quand le firmware applicatif tournera.
+  console_baud: 57600
+
+  # UART du Secure Enclave, celle que SETOOLS utilise pour programmer la MRAM.
+  # [SOURCÉ] Ce n'est PAS la console applicative : s'y connecter pour lire les
+  # traces de l'application ne donne rien, et parler dessus pendant un flash
+  # peut le faire échouer.
+  se_baud: 55000
+
+  # [MESURÉ 17/11/2026] Écrire sur le port J-Link perturbe la réception :
+  # le flux se bloque ~2,2 s, puis se déverse d'un coup, préfixé de 4 octets
+  # parasites (04 FF FA 03). Rien n'indique que la carte traite ce qu'on
+  # envoie. Tant que ce n'est pas élucidé, préférer `--read-only` pour lire
+  # des traces : la console bidirectionnelle n'est pas démontrée.
+  #
+  # Nom de périphérique du Secure Enclave, tel que `tools-config -c` l'attend.
+  # Sur Linux il vient d'une règle udev fournie par SETOOLS ; sur macOS le
+  # port apparaît directement sous /dev/cu.usbmodem*.
+  se_device: /dev/alif-se
+
+  # Motifs de recherche des ports, par plateforme. `--port` passe outre.
+  #
+  # macOS : uniquement /dev/cu.* et jamais /dev/tty.*. Les deux nœuds
+  # désignent le même port, mais /dev/tty.* est le côté « appel entrant » :
+  # l'ouvrir bloque jusqu'à détection de porteuse (DCD), que la carte
+  # n'assure pas. On y attend indéfiniment, sans message d'erreur.
+  port_globs:
+    darwin: ["/dev/cu.usbmodem*", "/dev/cu.usbserial*"]
+    linux: ["/dev/alif-se", "/dev/ttyACM*", "/dev/ttyUSB*"]
+
+  # Ports à écarter : ce ne sera jamais la carte. macOS expose en permanence
+  # des pseudo-ports (Bluetooth, console de debug, debug Wi-Fi) qui rendaient
+  # le choix du port « ambigu » alors qu'un seul candidat était réel.
+  exclude_globs:
+    darwin:
+      - "/dev/*Bluetooth*"
+      - "/dev/*debug-console*"
+      - "/dev/*wlan-debug*"
+      - "/dev/tty.*"
+    linux: []
+
+  # Garde-fou : refuser un débit improbable sans --force, parce qu'un mauvais
+  # débit ne lève aucune erreur — il ne sort que du binaire. La liste contient
+  # les débits plausibles de cette carte, pas une liste générique.
+  #   57600  mesuré sur le port J-Link
+  #   55000  UART du Secure Enclave [SOURCÉ]
+  #   115200 hypothèse initiale de REQ-113, infirmée mais conservée le temps
+  #          d'identifier formellement chaque interface
+  allowed_bauds: [57600, 55000, 115200]
+
+  # Débits essayés par `--scan`. La liste contient volontairement des valeurs
+  # d'ENCADREMENT (52500, 56000, 60000, 62500) en plus des débits plausibles :
+  # la tolérance de l'UART fait que plusieurs débits voisins décodent, et seul
+  # un encadrement des deux côtés permet de situer le centre de la fenêtre.
+  # Sans 60000 et 62500, un vrai 57600 se confond avec un 55000.
+  scan_bauds:
+    - 52500     # encadrement bas
+    - 55000     # UART Secure Enclave
+    - 56000     # encadrement
+    - 57600     # mesuré sur le port J-Link
+    - 60000     # encadrement haut
+    - 62500     # encadrement haut
+    - 115200    # hypothèse initiale de REQ-113
+    - 9600
+    - 19200
+    - 38400
+    - 230400
+    - 460800
+    - 921600

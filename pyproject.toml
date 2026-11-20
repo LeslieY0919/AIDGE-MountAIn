@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mountain"
+version = "0.1.0"
+description = "Chaîne de détection et de classification d'animaux sauvages pour Alif Ensemble E7 (Challenge AIDGE 2026, défi MountAIn)"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"   # AIDGE ne supporte pas 3.13
+
+# Dépendances du PAQUET, c'est-à-dire ce que src/mountain/ importe vraiment :
+# PyYAML pour config/board, numpy et pillow pour preprocess. Tout le reste est
+# un extra, parce qu'un `pip install -e .` ne doit pas tirer torch pour lire un
+# port série. Voir les extras ci-dessous.
+dependencies = [
+    "numpy",
+    "pillow",
+    "PyYAML",
+]
+
+[project.optional-dependencies]
+# La chaîne complète : entraînement, export AIDGE, quantification.
+# C'est ce qu'installe `make install`.
+#
+# PLATEFORME — AIDGE ne publie des roues que pour **Linux x86_64** et
+# **Windows amd64**. Aucune roue macOS, et aucun sdist : la chaîne
+# d'entraînement et d'export ne s'installe donc PAS sur un Mac, quelle que
+# soit la version de Python. Un Mac peut en revanche parler à la carte,
+# avec l'extra `board`. Vérifié sur PyPI le 17/11/2026.
+#
+# VERSIONS — les paquets aidge sont épinglés à la plage documentée comme
+# connue bonne (CLAUDE.md §3, [SOURCÉ]). Sans borne haute, pip installe
+# 0.11.0, dont l'API diffère et que le fork aidge-tosa du défi ne couvre pas
+# forcément. Relever la borne est une décision à prendre explicitement, après
+# avoir repassé `make check`.
+#
+# aidge-quantization ne figure pas ici volontairement : ses métadonnées
+# déclarent aidge-backend-cuda comme obligatoire alors que la chaîne CPU n'en
+# a pas besoin. Il s'installe à part avec --no-deps (voir le README).
+ml = [
+    "aidge-core>=0.10.1,<0.11",
+    "aidge-backend-cpu>=0.10.1,<0.11",
+    "aidge-onnx>=0.10.1,<0.11",
+    "aidge-export-cpp",
+    "huggingface-hub",
+    "onnx",
+    "onnxruntime",
+    "requests",
+    "timm",
+    "torch",
+    "torchvision",
+    "tqdm",
+    "ultralytics",
+]
+
+# Parler à la carte (scripts/board/). Volontairement séparé : une machine qui
+# ne sert qu'à la console série n'a aucune raison d'installer torch.
+board = ["pyserial"]
+
+dev = ["pytest"]
+
+# Layout src/ : le paquet n'est importable qu'une fois installé
+# (`pip install -e .`), ce qui évite les imports accidentels depuis le cwd.
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
